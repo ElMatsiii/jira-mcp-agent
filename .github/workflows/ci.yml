@@ -1,0 +1,75 @@
+name: CI (jira-mcp-agent)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'jira-mcp-agent/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'jira-mcp-agent/**'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-coverage:
+    name: Node.js 20 Build, Test & Coverage Enforcement (>= 60%)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: jira-mcp-agent
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: jira-mcp-agent/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Compile TypeScript
+        run: npm run build
+
+      - name: Run Jest Test Suite with Coverage Profile
+        # Native Jest coverageThreshold ({ statements: 60, branches: 60, functions: 60, lines: 60 }) fails with exit 1 if below threshold
+        run: npm run test:cov -- --ci --colors
+        env:
+          CI: true
+
+      - name: Enforce Coverage Threshold Gate (>= 60%)
+        run: node scripts/check-coverage.js coverage/coverage-summary.json 60.0
+
+      - name: Verify Zero Python Policy
+        run: |
+          echo "Asserting zero Python source files exist in jira-mcp-agent..."
+          PYTHON_FILES=$(find . -name "*.py" -not -path "*/node_modules/*" | wc -l)
+          if [ "$PYTHON_FILES" -gt 0 ]; then
+            echo "::error::Violation of requirement R3: Found $PYTHON_FILES Python files in jira-mcp-agent!"
+            exit 1
+          fi
+          echo "Zero Python policy verified: Clean TypeScript/Node.js codebase."
+
+      - name: Upload Coverage Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jira-mcp-agent-coverage
+          path: jira-mcp-agent/coverage/
+          retention-days: 14

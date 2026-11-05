@@ -1,0 +1,80 @@
+import request from 'supertest';
+import { createServer } from '../../src/server';
+import { GeminiService } from '../../src/services/gemini-service';
+import { TEST_FIXTURES } from '../mocks/fixtures';
+
+describe('POST /agent/decompose-epic', () => {
+  it('decomposes an epic and returns structured user stories with Gherkin criteria (T1-F27-01)', async () => {
+    const aiService = new GeminiService({ forceOffline: true });
+    const { app } = createServer(aiService);
+
+    const res = await request(app)
+      .post('/agent/decompose-epic')
+      .send({
+        epicTitle: 'User Authentication & Multi-Tenancy',
+        epicDescription: 'Support OAuth2, JWT verification, and organization tenant isolation',
+        projectKey: 'AUTH',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('application/json');
+    expect(res.headers['x-ai-engine']).toBe('offline-heuristic');
+    expect(res.body.epicTitle).toBe('User Authentication & Multi-Tenancy');
+    expect(res.body.stories).toBeDefined();
+    expect(res.body.stories.length).toBeGreaterThanOrEqual(3);
+
+    for (const story of res.body.stories) {
+      expect(story.title).toBeDefined();
+      expect(story.estimatedStoryPoints).toBeGreaterThan(0);
+      expect(story.acceptanceCriteriaGherkin).toContain('Scenario:');
+      expect(story.acceptanceCriteriaGherkin).toContain('Given');
+      expect(story.acceptanceCriteriaGherkin).toContain('When');
+      expect(story.acceptanceCriteriaGherkin).toContain('Then');
+    }
+  });
+
+  it('sets x-ai-engine to gemini-2.0-flash when live model responds', async () => {
+    const aiService = new GeminiService({ apiKey: 'fake-api-key' });
+
+    (aiService as any).genAI = {
+      getGenerativeModel: () => ({
+        generateContent: jest.fn().mockResolvedValue({
+          response: {
+            text: () =>
+              JSON.stringify({
+                epicTitle: 'Live Epic',
+                stories: [
+                  {
+                    title: 'Live Story',
+                    description: 'Desc',
+                    type: 'STORY',
+                    priority: 'HIGH',
+                    estimatedStoryPoints: 5,
+                    acceptanceCriteriaGherkin: 'Scenario: Live\nGiven X\nWhen Y\nThen Z',
+                  },
+                ],
+              }),
+          },
+        }),
+      }),
+    };
+
+    const { app } = createServer(aiService);
+    const res = await request(app).post('/agent/decompose-epic').send({ epicTitle: 'Live Epic' });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-ai-engine']).toBe('gemini-2.0-flash');
+    expect(res.body.stories[0].title).toBe('Live Story');
+  });
+
+  it('handles internal unexpected exceptions with HTTP 500', async () => {
+    const aiService = new GeminiService({ forceOffline: true });
+    jest.spyOn(aiService, 'decomposeEpic').mockRejectedValueOnce(new Error('Fatal decomposition bug'));
+
+    const { app } = createServer(aiService);
+    const res = await request(app).post('/agent/decompose-epic').send({ epicTitle: 'Crash Epic' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toContain('Fatal decomposition bug');
+  });
+});
