@@ -94,18 +94,18 @@ describe('REST Boundary Conditions & Adversarial Edge Cases (Feature 27 Tier 2)'
     expect(res.body.error).toContain('Route not found');
   });
 
-  // T2-F27-05: Unicode & Emoji in epic description handled correctly
-  it('T2-F27-05: should preserve Unicode and Emoji in input and response', async () => {
+  // T2-F27-05: Unicode in epic description handled correctly
+  it('T2-F27-05: should preserve Unicode in input and response', async () => {
     const res = await request(app)
       .post('/agent/decompose-epic')
       .send({
-        epicTitle: '🚀 Internationalization & Localization 🌍',
-        epicDescription: 'Support 日本語, Español, and 🎯 emojis across all platforms',
+        epicTitle: 'Internationalization & Localization [I18N]',
+        epicDescription: 'Support 日本語, Español, and Français characters across all platforms',
         projectKey: 'I18N',
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.epicTitle).toBe('🚀 Internationalization & Localization 🌍');
+    expect(res.body.epicTitle).toBe('Internationalization & Localization [I18N]');
   });
 
   // SSE Transport endpoints

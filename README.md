@@ -1,4 +1,4 @@
-# 🤖 AI Scrum Master MCP Server (`jira-mcp-agent`)
+# AI Scrum Master MCP Server (`jira-mcp-agent`)
 
 [![Node Version](https://img.shields.io/badge/Node-v20+-green.svg?logo=nodedotjs)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6.svg?logo=typescript)]()
@@ -10,14 +10,14 @@ Agente inteligente de gestión ágil (AI Scrum Master) implementado en **TypeScr
 
 ---
 
-## 🏛️ Rol en la Arquitectura y Protocolos
+## Rol en la Arquitectura y Protocolos
 
 ```mermaid
 flowchart LR
-    BFF["🚀 BFF Gateway\n(GraphQL / NestJS)"] -->|"HTTP / REST :3000\n(POST /decompose-epic)"| MCP["🤖 jira-mcp-agent\n(:3000 Server)"]
+    BFF["BFF Gateway\n(GraphQL / NestJS)"] -->|"HTTP / REST :3000\n(POST /decompose-epic)"| MCP["jira-mcp-agent\n(:3000 Server)"]
     
-    MCP -->|"SDK Oficial @google/genai\n(HTTPS)"| GEMINI["☁️ Google Gemini 2.0 Flash\n(Cloud LLM)"]
-    MCP -.->|"Fallback en caso de offline / sin API Key"| FB["⚡ Fallback Heuristic Engine\n(Fibonacci + Gherkin)"]
+    MCP -->|"SDK Oficial @google/genai\n(HTTPS)"| GEMINI["Google Gemini 2.0 Flash\n(Cloud LLM)"]
+    MCP -.->|"Fallback en caso de offline / sin API Key"| FB["Fallback Heuristic Engine\n(Fibonacci + Gherkin)"]
 ```
 
 ### Protocolos de Entrada y Salida
@@ -33,7 +33,7 @@ flowchart LR
 
 ---
 
-## 📂 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```text
 jira-mcp-agent/
@@ -63,7 +63,7 @@ jira-mcp-agent/
 
 ---
 
-## ⚙️ Variables de Entorno
+## Variables de Entorno
 
 | Variable | Descripción | Valor por Defecto / Requerido |
 | :--- | :--- | :--- |
@@ -74,7 +74,7 @@ jira-mcp-agent/
 
 ---
 
-## 🧪 Pruebas Automatizadas y Cobertura
+## Pruebas Automatizadas y Cobertura
 
 El agente cuenta con pruebas unitarias exhaustivas con Jest que verifican tanto las llamadas a la API de Gemini mediante mocks estructurados como la precisión del motor de fallback offline:
 
@@ -98,7 +98,7 @@ npm test
 
 ---
 
-## 🐳 Despliegue con Docker
+## Despliegue con Docker
 
 ```bash
 # Compilar la imagen Docker
@@ -112,6 +112,6 @@ docker run -d -p 3000:3000 \
 
 ---
 
-## 📄 Licencia
+## Licencia
 
-MIT License © 2026 Jira AI Team.
+MIT License (c) 2026 Jira AI Team.
