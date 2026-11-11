@@ -444,12 +444,16 @@ export class OfflineFallbackEngine {
     const sprintName = request.sprintName || `Sprint ${sprintId}`;
     const burndown = request.burndownData || [];
     const blockedCount = request.blockedIssuesCount || 0;
+    const timeAlerts = request.alerts || [];
 
     if (burndown.length === 0) {
       return {
         healthStatus: blockedCount > 0 ? 'AT_RISK' : 'HEALTHY',
-        diagnosis: `Sprint ${sprintName} has no burndown data points recorded yet.`,
-        rootCauses: blockedCount > 0 ? [`${blockedCount} issues currently flagged as BLOCKED.`] : ['Sprint initialized; awaiting initial task progress.'],
+        diagnosis: `Sprint ${sprintName} has no burndown data points recorded yet. ${timeAlerts.join(' ')}`.trim(),
+        rootCauses: [
+          ...(blockedCount > 0 ? [`${blockedCount} issues currently flagged as BLOCKED.`] : ['Sprint initialized; awaiting initial task progress.']),
+          ...timeAlerts,
+        ],
         actionableRecommendations: ['Ensure team transitions tasks and logs daily progress.'],
       };
     }
@@ -475,6 +479,7 @@ export class OfflineFallbackEngine {
     if (rootCauses.length === 0) {
       rootCauses.push('Sprint is tracking cleanly along the ideal burndown trajectory.');
     }
+    rootCauses.push(...timeAlerts);
 
     const actionableRecommendations: string[] = [
       'Conduct swarming session on blocked PRs and impediments.',
@@ -483,8 +488,8 @@ export class OfflineFallbackEngine {
 
     const diagnosis =
       healthStatus === 'AT_RISK'
-        ? 'Actual burndown is trending above ideal rate. Sprint delivery is at risk of velocity deficit.'
-        : 'Sprint burndown is tracking along ideal trajectory.';
+        ? `Actual burndown is trending above ideal rate. Sprint delivery is at risk of velocity deficit. ${timeAlerts.join(' ')}`.trim()
+        : `Sprint burndown is tracking along ideal trajectory. ${timeAlerts.join(' ')}`.trim();
 
     return {
       healthStatus,

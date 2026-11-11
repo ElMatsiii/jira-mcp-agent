@@ -210,6 +210,20 @@ describe('OfflineFallbackEngine', () => {
       expect(res.rootCauses[0]).toContain('ideal burndown trajectory');
     });
 
+    it('includes time-tracking alerts without treating logged hours as a productivity measure', () => {
+      const timeAlert = 'El equipo registró 2.50 horas de trabajo en este sprint.';
+      const res = OfflineFallbackEngine.diagnoseMetrics({
+        sprintId: 'sprint-time-1',
+        burndownData: TEST_FIXTURES.healthyBurndown,
+        blockedIssuesCount: 0,
+        alerts: [timeAlert],
+      });
+
+      expect(res.healthStatus).toBe('HEALTHY');
+      expect(res.diagnosis).toContain(timeAlert);
+      expect(res.rootCauses).toContain(timeAlert);
+    });
+
     it('handles empty burndown data gracefully', () => {
       const res = OfflineFallbackEngine.diagnoseMetrics({
         sprintId: 'sprint-empty-1',

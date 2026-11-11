@@ -7,6 +7,7 @@ import {
   DecomposeEpicInputSchema,
   PlanSprintInputSchema,
   DiagnoseMetricsInputSchema,
+  EstimateStoryPointsInputSchema,
   HealthCheckResponseSchema,
 } from '../schemas/zod-schemas';
 import { HealthCheckResponse } from '../types';
@@ -101,6 +102,32 @@ export function createExpressApp(aiService: GeminiService, mcpServer?: McpServer
       return res.status(200).json(result.data);
     } catch (err: any) {
       return res.status(500).json({ error: err.message || 'Metrics diagnosis failed' });
+    }
+  });
+
+  app.post('/agent/improve-story', async (req: Request, res: Response) => {
+    const parseResult = EstimateStoryPointsInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(422).json({ error: parseResult.error.issues[0]?.message || 'Validation failed' });
+    }
+    try {
+      const [estimate, criteria] = await Promise.all([
+        aiService.estimateStoryPoints(parseResult.data),
+        aiService.generateAcceptanceCriteria({
+          title: parseResult.data.title,
+          description: parseResult.data.description,
+        }),
+      ]);
+      res.setHeader('x-ai-engine', estimate.source);
+      return res.status(200).json({
+        storyPoints: estimate.data.storyPoints,
+        confidence: estimate.data.confidence,
+        reasoning: estimate.data.reasoning,
+        complexityFactors: estimate.data.complexityFactors,
+        acceptanceCriteriaGherkin: criteria.data.acceptanceCriteriaGherkin,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Story improvement failed' });
     }
   });
 

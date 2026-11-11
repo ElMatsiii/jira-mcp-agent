@@ -15,7 +15,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies for tsc)
-RUN npm ci || npm install
+RUN npm ci
 
 # Copy source code and TypeScript configuration
 COPY tsconfig.json ./
