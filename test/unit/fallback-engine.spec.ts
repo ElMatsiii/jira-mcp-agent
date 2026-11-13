@@ -261,4 +261,29 @@ describe('OfflineFallbackEngine', () => {
       expect(res.recommendations[0].matchScore).toBeGreaterThan(res.recommendations[1].matchScore);
     });
   });
+
+  describe('breakdownTask', () => {
+    it('decomposes web application task into front, back, db, auth, and ci/cd subtasks', () => {
+      const res = OfflineFallbackEngine.breakdownTask({
+        title: 'crear la base de la pagina web',
+        description: 'arquitectura inicial',
+      });
+
+      expect(res.parentTitle).toBe('crear la base de la pagina web');
+      expect(res.subtasks.length).toBeGreaterThanOrEqual(3);
+      expect(res.subtasks.some((st) => st.title.toLowerCase().includes('front'))).toBe(true);
+      expect(res.subtasks.some((st) => st.title.toLowerCase().includes('back'))).toBe(true);
+      expect(res.subtasks.some((st) => st.title.toLowerCase().includes('datos'))).toBe(true);
+      expect(res.subtasks.every((st) => [1, 2, 3, 5, 8].includes(st.estimatedStoryPoints))).toBe(true);
+    });
+
+    it('decomposes auth task into specific login/jwt/security subtasks', () => {
+      const res = OfflineFallbackEngine.breakdownTask({
+        title: 'Sistema de autenticación y sesiones',
+      });
+
+      expect(res.subtasks.length).toBeGreaterThanOrEqual(3);
+      expect(res.subtasks.some((st) => st.title.toLowerCase().includes('formulario') || st.title.toLowerCase().includes('token'))).toBe(true);
+    });
+  });
 });

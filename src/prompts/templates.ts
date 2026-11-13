@@ -131,3 +131,31 @@ Include:
 2. Edge case / validation error scenario
 Return valid Gherkin formatted text and the scenariosCount.`;
 }
+
+/**
+ * Builds prompt for Task Breakdown & Subtask Segmentation
+ */
+export function buildBreakdownTaskPrompt(
+  title: string,
+  description: string = '',
+  projectKey: string = 'JIRA',
+  maxSubtasks: number = 5
+): string {
+  return `Segment and break down the following prospective task into 3 to ${maxSubtasks} actionable, complementary subtasks or technical slices:
+
+Task Title: ${title}
+Task Context / Description: ${description || 'No description provided'}
+Project Key: ${projectKey}
+
+Instructions:
+1. If the task is broad (such as "crear la base de la pagina web"), decompose it into distinct technical/operational subtasks (e.g., Crear Frontend, Crear Backend API, Configurar Base de Datos & Modelos, Configurar Autenticación/Seguridad, Pipeline CI/CD).
+2. For each subtask, provide:
+   - title: concise and action-oriented
+   - description: clear explanation of what needs to be implemented
+   - type: TASK, STORY, or BUG
+   - priority: LOW, MEDIUM, HIGH, or CRITICAL
+   - estimatedStoryPoints: Fibonacci (1, 2, 3, 5, 8)
+   - acceptanceCriteriaGherkin: standard Given/When/Then scenario
+3. Return the parentTitle matching the original title and the list of subtasks.`;
+}
+

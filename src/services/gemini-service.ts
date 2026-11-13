@@ -18,12 +18,15 @@ import {
   EstimateStoryPointsResponse,
   GenerateAcceptanceCriteriaRequest,
   GenerateAcceptanceCriteriaResponse,
+  BreakdownTaskRequest,
+  BreakdownTaskResponse,
   AIServiceResult,
 } from '../types';
 import {
   epicDecompositionResponseSchema,
   sprintPlanningResponseSchema,
   metricsDiagnosisResponseSchema,
+  taskBreakdownResponseSchema,
 } from '../schemas/gemini-schemas';
 import {
   SYSTEM_SCRUM_MASTER_INSTRUCTION,
@@ -32,6 +35,7 @@ import {
   buildDiagnoseMetricsPrompt,
   buildEstimatePrompt,
   buildGherkinPrompt,
+  buildBreakdownTaskPrompt,
 } from '../prompts/templates';
 import { OfflineFallbackEngine } from './fallback-engine';
 
@@ -320,6 +324,38 @@ export class GeminiService {
         return this.parseJSONSafely<GenerateAcceptanceCriteriaResponse>(response.response.text());
       },
       () => OfflineFallbackEngine.generateAcceptanceCriteriaFull(request)
+    );
+  }
+
+  /**
+   * Task Breakdown & Subtask Segmentation
+   */
+  public async breakdownTask(request: BreakdownTaskRequest): Promise<AIServiceResult<BreakdownTaskResponse>> {
+    return this.safeExecute<BreakdownTaskResponse>(
+      'breakdownTask',
+      async () => {
+        if (!this.genAI) throw new Error('Gemini SDK not initialized');
+
+        const model = this.genAI.getGenerativeModel({
+          model: this.modelName,
+          systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: taskBreakdownResponseSchema,
+            temperature: 0.2,
+          },
+        });
+
+        const prompt = buildBreakdownTaskPrompt(
+          request.title,
+          request.description,
+          request.projectKey,
+          request.maxSubtasks
+        );
+        const response = await model.generateContent(prompt);
+        return this.parseJSONSafely<BreakdownTaskResponse>(response.response.text());
+      },
+      () => OfflineFallbackEngine.breakdownTask(request)
     );
   }
 }

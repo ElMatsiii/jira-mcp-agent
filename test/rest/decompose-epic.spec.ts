@@ -77,4 +77,31 @@ describe('POST /agent/decompose-epic', () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toContain('Fatal decomposition bug');
   });
+
+  describe('POST /agent/breakdown-task', () => {
+    it('segments prospective task into complementary subtasks', async () => {
+      const aiService = new GeminiService({ forceOffline: true });
+      const { app } = createServer(aiService);
+
+      const res = await request(app)
+        .post('/agent/breakdown-task')
+        .send({ title: 'crear la base de la pagina web' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.parentTitle).toBe('crear la base de la pagina web');
+      expect(res.body.subtasks.length).toBeGreaterThanOrEqual(3);
+      expect(res.body.subtasks[0].title).toBeDefined();
+    });
+
+    it('returns 422 if title is missing', async () => {
+      const aiService = new GeminiService({ forceOffline: true });
+      const { app } = createServer(aiService);
+
+      const res = await request(app)
+        .post('/agent/breakdown-task')
+        .send({ description: 'Sin titulo' });
+
+      expect(res.status).toBe(422);
+    });
+  });
 });

@@ -21,6 +21,9 @@ import {
   EstimateStoryPointsResponse,
   GenerateAcceptanceCriteriaRequest,
   GenerateAcceptanceCriteriaResponse,
+  SuggestedSubtask,
+  BreakdownTaskRequest,
+  BreakdownTaskResponse,
   HealthCheckResponse,
 } from '../types';
 
@@ -185,7 +188,29 @@ export const BalanceCapacityInputSchema = z.object({
   candidateIssues: z.array(CandidateIssueSchema).optional().default([]),
 });
 
-// --- 8. Health Check Schema ---
+// --- 8. Task Breakdown & Subtask Segmentation Schemas ---
+export const SuggestedSubtaskSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().default(''),
+  type: StoryTypeSchema.default('TASK'),
+  priority: IssuePrioritySchema.default('MEDIUM'),
+  estimatedStoryPoints: z.number().int().positive().default(3),
+  acceptanceCriteriaGherkin: z.string().optional().default(''),
+});
+
+export const BreakdownTaskInputSchema = z.object({
+  title: z.string({ required_error: 'title is required' }).trim().min(1, 'title is required'),
+  description: z.string().optional().default(''),
+  projectKey: z.string().optional().default('JIRA'),
+  maxSubtasks: z.number().int().positive().max(10).optional().default(5),
+});
+
+export const BreakdownTaskResponseSchema = z.object({
+  parentTitle: z.string(),
+  subtasks: z.array(SuggestedSubtaskSchema).min(1),
+});
+
+// --- 9. Health Check Schema ---
 export const HealthCheckResponseSchema = z.object({
   status: z.literal('ok'),
   model: z.string(),

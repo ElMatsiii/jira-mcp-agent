@@ -8,6 +8,7 @@ import {
   PlanSprintInputSchema,
   DiagnoseMetricsInputSchema,
   EstimateStoryPointsInputSchema,
+  BreakdownTaskInputSchema,
   HealthCheckResponseSchema,
 } from '../schemas/zod-schemas';
 import { HealthCheckResponse } from '../types';
@@ -128,6 +129,26 @@ export function createExpressApp(aiService: GeminiService, mcpServer?: McpServer
       });
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Story improvement failed' });
+    }
+  });
+
+  app.post('/agent/breakdown-task', async (req: Request, res: Response) => {
+    if (!req.body || typeof req.body !== 'object' || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ error: 'Request body cannot be empty' });
+    }
+
+    const parseResult = BreakdownTaskInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      const firstIssue = parseResult.error.issues[0]?.message || 'Validation failed';
+      return res.status(422).json({ error: firstIssue, details: parseResult.error.format() });
+    }
+
+    try {
+      const result = await aiService.breakdownTask(parseResult.data);
+      res.setHeader('x-ai-engine', result.source);
+      return res.status(200).json(result.data);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Task breakdown failed' });
     }
   });
 

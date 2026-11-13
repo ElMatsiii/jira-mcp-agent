@@ -13,6 +13,7 @@ import {
   EstimateStoryPointsInputSchema,
   GenerateAcceptanceCriteriaInputSchema,
   BalanceCapacityInputSchema,
+  BreakdownTaskInputSchema,
 } from '../schemas/zod-schemas';
 
 export function createMcpServer(aiService: GeminiService): McpServer {
@@ -311,6 +312,50 @@ export function createMcpServer(aiService: GeminiService): McpServer {
         return {
           isError: true,
           content: [{ type: 'text', text: JSON.stringify({ error: err.message || 'Error executing balanceSprintCapacity' }) }],
+        };
+      }
+    }
+  );
+
+  // 8. Tool: breakdown_task
+  server.registerTool(
+    'breakdown_task',
+    {
+      description: 'Breaks down and segments a prospective task into complementary subtasks (Frontend, Backend, DB, CI/CD, etc.)',
+      inputSchema: BreakdownTaskInputSchema.shape,
+    },
+    async (args: any) => {
+      try {
+        const result = await aiService.breakdownTask(args as any);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: JSON.stringify({ error: err.message || 'Error executing breakdown_task' }) }],
+        };
+      }
+    }
+  );
+
+  // Alias: segment_task
+  server.registerTool(
+    'segment_task',
+    {
+      description: 'Alias for breakdown_task',
+      inputSchema: BreakdownTaskInputSchema.shape,
+    },
+    async (args: any) => {
+      try {
+        const result = await aiService.breakdownTask(args as any);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: JSON.stringify({ error: err.message || 'Error executing segment_task' }) }],
         };
       }
     }

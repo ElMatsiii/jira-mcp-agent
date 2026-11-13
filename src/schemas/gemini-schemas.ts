@@ -143,3 +143,56 @@ export const metricsDiagnosisResponseSchema: ResponseSchema = {
     'actionableRecommendations',
   ],
 };
+
+/**
+ * Structured schema for Task Breakdown & Subtask Segmentation
+ */
+export const taskBreakdownResponseSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    parentTitle: {
+      type: SchemaType.STRING,
+      description: 'The parent issue or task title being segmented',
+    },
+    subtasks: {
+      type: SchemaType.ARRAY,
+      description: 'Segmented subtasks that complement the prospective task',
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          title: {
+            type: SchemaType.STRING,
+            description: 'Concise subtask title',
+          },
+          description: {
+            type: SchemaType.STRING,
+            description: 'Functional or technical explanation of this subtask',
+          },
+          type: {
+            type: SchemaType.STRING,
+            description: 'Issue type: TASK, STORY, or BUG',
+            format: 'enum',
+            enum: ['TASK', 'STORY', 'BUG'],
+          },
+          priority: {
+            type: SchemaType.STRING,
+            description: 'Issue priority: LOW, MEDIUM, HIGH, or CRITICAL',
+            format: 'enum',
+            enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+          },
+          estimatedStoryPoints: {
+            type: SchemaType.INTEGER,
+            description: 'Fibonacci story points (1, 2, 3, 5, 8)',
+          },
+          acceptanceCriteriaGherkin: {
+            type: SchemaType.STRING,
+            description: 'Gherkin acceptance criteria for this subtask',
+          },
+        },
+        required: ['title', 'description', 'type', 'priority', 'estimatedStoryPoints'],
+      },
+    },
+  },
+  required: ['parentTitle', 'subtasks'],
+};
+

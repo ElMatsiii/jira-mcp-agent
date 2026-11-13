@@ -24,6 +24,9 @@ import {
   EstimateStoryPointsResponse,
   GenerateAcceptanceCriteriaRequest,
   GenerateAcceptanceCriteriaResponse,
+  SuggestedSubtask,
+  BreakdownTaskRequest,
+  BreakdownTaskResponse,
 } from '../types';
 
 export class OfflineFallbackEngine {
@@ -548,6 +551,195 @@ export class OfflineFallbackEngine {
       recommendedAssigneeId: top.memberId,
       recommendations: scoredMembers,
       rationale: `Recommended ${top.memberName} with highest match score (${top.matchScore}%) and capacity availability.`,
+    };
+  }
+
+  /**
+   * Deterministic Task Breakdown & Subtask Suggester:
+   * Segments a prospective new task into actionable complementary subtasks.
+   */
+  public static breakdownTask(request: BreakdownTaskRequest): BreakdownTaskResponse {
+    const title = (request.title || '').trim();
+    const description = (request.description || '').trim();
+    const combined = `${title} ${description}`.toLowerCase();
+    const maxSubtasks = request.maxSubtasks && request.maxSubtasks > 0 ? Math.min(request.maxSubtasks, 6) : 5;
+
+    let subtasks: SuggestedSubtask[] = [];
+
+    if (
+      combined.includes('web') ||
+      combined.includes('pagina') ||
+      combined.includes('página') ||
+      combined.includes('sitio') ||
+      combined.includes('front') ||
+      combined.includes('back') ||
+      combined.includes('base') ||
+      combined.includes('app')
+    ) {
+      subtasks = [
+        {
+          title: 'Crear Frontend y componentes UI base',
+          description: 'Estructurar aplicación cliente, configuración de enrutador, layout base y temas de diseño.',
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: 'Given el entorno de desarrollo When se inicia el servidor web Then renderiza la vista principal sin errores de consola',
+        },
+        {
+          title: 'Crear Backend y servicios API REST',
+          description: 'Configurar servidor HTTP, controladores base, middleware de CORS y validación de peticiones.',
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 5,
+          acceptanceCriteriaGherkin: 'Given peticiones HTTP entrantes When se invocan endpoints REST Then retorna respuestas estandarizadas con códigos HTTP correctos',
+        },
+        {
+          title: 'Diseñar esquema de base de datos y migraciones',
+          description: 'Definir tablas o colecciones de datos, índices de rendimiento y scripts de migración automáticos.',
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: 'Given la base de datos vacía When se ejecutan las migraciones Then todas las tablas y restricciones se crean satisfactoriamente',
+        },
+        {
+          title: 'Configurar autenticación y gestión de usuarios',
+          description: 'Implementar flujo de inicio de sesión, sesiones seguras mediante tokens y protección de rutas.',
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 5,
+          acceptanceCriteriaGherkin: 'Given un usuario con credenciales válidas When inicia sesión Then recibe un token de acceso autorizado',
+        },
+        {
+          title: 'Pipeline CI/CD y despliegue del entorno',
+          description: 'Configurar contenedor Docker, flujos de integración continua y verificación automática de calidad.',
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 2,
+          acceptanceCriteriaGherkin: 'Given un push al repositorio When pasa el pipeline Then las imágenes se construyen y las pruebas pasan al 100%',
+        },
+      ];
+    } else if (
+      combined.includes('auth') ||
+      combined.includes('login') ||
+      combined.includes('seguridad') ||
+      combined.includes('registro') ||
+      combined.includes('sesion') ||
+      combined.includes('sesión')
+    ) {
+      subtasks = [
+        {
+          title: 'Implementar formulario de autenticación e interfaz',
+          description: 'Diseñar vista accesible para login y registro con validación de entradas.',
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: 'Given la vista de login When se ingresan credenciales incompletas Then muestra alertas contextuales de validación',
+        },
+        {
+          title: 'Servicio de emisión y validación de tokens JWT',
+          description: 'Generación de pares de tokens de acceso y refresco con firma criptográfica.',
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 5,
+          acceptanceCriteriaGherkin: 'Given un token válido When se envía en la cabecera Authorization Then permite acceso al recurso protegido',
+        },
+        {
+          title: 'Mecanismo de recuperación de contraseña',
+          description: 'Flujo de envío de token de un solo uso por correo y restablecimiento seguro.',
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: 'Given una solicitud de restablecimiento When el token es válido Then permite definir una nueva contraseña',
+        },
+        {
+          title: 'Middleware de autorización y roles de usuario',
+          description: 'Control de acceso granular (RBAC) para proteger endpoints administrativos.',
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: 'Given un usuario sin rol de administrador When accede a una ruta restringida Then retorna HTTP 403 Forbidden',
+        },
+      ];
+    } else if (
+      combined.includes('api') ||
+      combined.includes('servicio') ||
+      combined.includes('endpoint') ||
+      combined.includes('microservicio')
+    ) {
+      subtasks = [
+        {
+          title: 'Definir contratos y especificación de interfaz',
+          description: 'Redactar contratos OpenAPI/Protobuf y modelos de datos compartidos.',
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 2,
+          acceptanceCriteriaGherkin: 'Given el esquema de contratos When se valida contra el linter Then cumple los estándares sin discrepancias',
+        },
+        {
+          title: 'Implementar lógica de negocio y controladores',
+          description: 'Codificar servicios internos, reglas de negocio y manejo estandarizado de excepciones.',
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 5,
+          acceptanceCriteriaGherkin: 'Given datos de entrada válidos When se procesa la transacción Then persiste el estado y retorna respuesta 200',
+        },
+        {
+          title: 'Integración de persistencia y repositorios',
+          description: 'Conectar repositorios a base de datos con transaccionalidad y manejo de concurrencia.',
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: 'Given una operación transaccional When ocurre un fallo intermedio Then se realiza rollback automático',
+        },
+        {
+          title: 'Pruebas unitarias e integración de endpoints',
+          description: 'Cobertura automatizada de casos límite, errores 4xx/5xx y pruebas de carga ligeras.',
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: 'Given la suite de pruebas When se ejecuta en el pipeline Then la cobertura supera el 80%',
+        },
+      ];
+    } else {
+      subtasks = [
+        {
+          title: `Especificación y arquitectura técnica para ${title}`,
+          description: `Definir alcance, dependencias técnicas y diseño detallado para "${title}".`,
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 2,
+          acceptanceCriteriaGherkin: `Given la necesidad de "${title}" When se completa el diseño Then el equipo aprueba la propuesta técnica`,
+        },
+        {
+          title: `Implementación de funcionalidad principal de ${title}`,
+          description: `Desarrollar el núcleo funcional requerido para "${title}".`,
+          type: 'TASK',
+          priority: 'HIGH',
+          estimatedStoryPoints: 5,
+          acceptanceCriteriaGherkin: `Given el sistema en ejecución When se activa la funcionalidad Then produce los resultados esperados`,
+        },
+        {
+          title: `Interfaz de usuario e interacción para ${title}`,
+          description: `Integrar elementos visuales, estados de carga y retroalimentación para "${title}".`,
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 3,
+          acceptanceCriteriaGherkin: `Given un usuario interactuando When realiza la acción Then la interfaz responde de manera fluida`,
+        },
+        {
+          title: `Pruebas automatizadas y validación de aceptación para ${title}`,
+          description: `Asegurar calidad mediante pruebas unitarias, de integración y validación funcional.`,
+          type: 'TASK',
+          priority: 'MEDIUM',
+          estimatedStoryPoints: 2,
+          acceptanceCriteriaGherkin: `Given los casos de prueba When se corre la suite Then todos los criterios de aceptación se cumplen`,
+        },
+      ];
+    }
+
+    return {
+      parentTitle: title,
+      subtasks: subtasks.slice(0, maxSubtasks),
     };
   }
 }

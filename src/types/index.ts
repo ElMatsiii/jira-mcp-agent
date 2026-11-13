@@ -142,6 +142,27 @@ export interface GenerateAcceptanceCriteriaResponse {
   scenariosCount: number;
 }
 
+export interface SuggestedSubtask {
+  title: string;
+  description: string;
+  type: StoryType;
+  priority: IssuePriority;
+  estimatedStoryPoints: number;
+  acceptanceCriteriaGherkin?: string;
+}
+
+export interface BreakdownTaskRequest {
+  title: string;
+  description?: string;
+  projectKey?: string;
+  maxSubtasks?: number;
+}
+
+export interface BreakdownTaskResponse {
+  parentTitle: string;
+  subtasks: SuggestedSubtask[];
+}
+
 export interface HealthCheckResponse {
   status: 'ok';
   model: string;
