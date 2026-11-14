@@ -1,52 +1,52 @@
 /**
- * Gemini 2.0 Flash Structured Response Schemas
- * Compatible with @google/generative-ai (v0.21.0+) ResponseSchema
+ * Gemini Structured Response Schemas
+ * Typed with the Schema/Type definitions of @google/genai (responseSchema in JSON mode)
  */
 
-import { ResponseSchema, SchemaType } from '@google/generative-ai';
+import { Schema, Type } from '@google/genai';
 
 /**
  * Structured schema for Epic Decomposition
  */
-export const epicDecompositionResponseSchema: ResponseSchema = {
-  type: SchemaType.OBJECT,
+export const epicDecompositionResponseSchema: Schema = {
+  type: Type.OBJECT,
   properties: {
     epicTitle: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       description: 'The title of the epic being decomposed',
     },
     stories: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       description: 'Granular user stories decomposed from the epic',
       items: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
           title: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Action-oriented story title',
           },
           description: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Agile user story in "As a... I want to... So that..." format',
           },
           type: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Issue type: STORY, TASK, or BUG',
             format: 'enum',
             enum: ['STORY', 'TASK', 'BUG'],
           },
           priority: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Issue priority level',
             format: 'enum',
             enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
           },
           estimatedStoryPoints: {
-            type: SchemaType.INTEGER,
+            type: Type.INTEGER,
             description: 'Fibonacci story point estimate: 1, 2, 3, 5, or 8',
           },
           acceptanceCriteriaGherkin: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Valid Gherkin scenarios (Feature, Scenario, Given, When, Then)',
           },
         },
@@ -67,32 +67,32 @@ export const epicDecompositionResponseSchema: ResponseSchema = {
 /**
  * Structured schema for Sprint Planning
  */
-export const sprintPlanningResponseSchema: ResponseSchema = {
-  type: SchemaType.OBJECT,
+export const sprintPlanningResponseSchema: Schema = {
+  type: Type.OBJECT,
   properties: {
     allocatedStoryPoints: {
-      type: SchemaType.INTEGER,
+      type: Type.INTEGER,
       description: 'Total story points of selected candidate issues',
     },
     capacityUtilizationPercent: {
-      type: SchemaType.NUMBER,
+      type: Type.NUMBER,
       description: 'Percentage of team capacity utilized (0 to 100+)',
     },
     recommendedIssueIds: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       description: 'Ordered list of selected issue IDs matching sprint goal and capacity',
       items: {
-        type: SchemaType.STRING,
+        type: Type.STRING,
       },
     },
     riskAssessment: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       description: 'Overall sprint risk assessment based on capacity buffer and complexity',
       format: 'enum',
       enum: ['LOW', 'MEDIUM', 'HIGH'],
     },
     rationale: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       description: 'Scrum Master rationale explaining selection trade-offs and capacity buffer',
     },
   },
@@ -108,31 +108,31 @@ export const sprintPlanningResponseSchema: ResponseSchema = {
 /**
  * Structured schema for Metrics Diagnosis
  */
-export const metricsDiagnosisResponseSchema: ResponseSchema = {
-  type: SchemaType.OBJECT,
+export const metricsDiagnosisResponseSchema: Schema = {
+  type: Type.OBJECT,
   properties: {
     healthStatus: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       description: 'Sprint health assessment',
       format: 'enum',
       enum: ['HEALTHY', 'AT_RISK', 'CRITICAL'],
     },
     diagnosis: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       description: 'Executive diagnostic summary of sprint trajectory',
     },
     rootCauses: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       description: 'Identified root causes of burndown deviations or bottlenecks',
       items: {
-        type: SchemaType.STRING,
+        type: Type.STRING,
       },
     },
     actionableRecommendations: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       description: 'Prescriptive agile recommendations to recover or maintain sprint health',
       items: {
-        type: SchemaType.STRING,
+        type: Type.STRING,
       },
     },
   },
@@ -147,45 +147,45 @@ export const metricsDiagnosisResponseSchema: ResponseSchema = {
 /**
  * Structured schema for Task Breakdown & Subtask Segmentation
  */
-export const taskBreakdownResponseSchema: ResponseSchema = {
-  type: SchemaType.OBJECT,
+export const taskBreakdownResponseSchema: Schema = {
+  type: Type.OBJECT,
   properties: {
     parentTitle: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       description: 'The parent issue or task title being segmented',
     },
     subtasks: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       description: 'Segmented subtasks that complement the prospective task',
       items: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
           title: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Concise subtask title',
           },
           description: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Functional or technical explanation of this subtask',
           },
           type: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Issue type: TASK, STORY, or BUG',
             format: 'enum',
             enum: ['TASK', 'STORY', 'BUG'],
           },
           priority: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Issue priority: LOW, MEDIUM, HIGH, or CRITICAL',
             format: 'enum',
             enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
           },
           estimatedStoryPoints: {
-            type: SchemaType.INTEGER,
+            type: Type.INTEGER,
             description: 'Fibonacci story points (1, 2, 3, 5, 8)',
           },
           acceptanceCriteriaGherkin: {
-            type: SchemaType.STRING,
+            type: Type.STRING,
             description: 'Gherkin acceptance criteria for this subtask',
           },
         },

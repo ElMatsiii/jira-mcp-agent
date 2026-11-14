@@ -36,27 +36,23 @@ describe('POST /agent/decompose-epic', () => {
   it('sets x-ai-engine to the live model name when Gemini responds', async () => {
     const aiService = new GeminiService({ apiKey: 'fake-api-key' });
 
+    const liveResponse = {
+      epicTitle: 'Live Epic',
+      stories: [
+        {
+          title: 'Live Story',
+          description: 'Desc',
+          type: 'STORY',
+          priority: 'HIGH',
+          estimatedStoryPoints: 5,
+          acceptanceCriteriaGherkin: 'Scenario: Live\nGiven X\nWhen Y\nThen Z',
+        },
+      ],
+    };
     (aiService as any).genAI = {
-      getGenerativeModel: () => ({
-        generateContent: jest.fn().mockResolvedValue({
-          response: {
-            text: () =>
-              JSON.stringify({
-                epicTitle: 'Live Epic',
-                stories: [
-                  {
-                    title: 'Live Story',
-                    description: 'Desc',
-                    type: 'STORY',
-                    priority: 'HIGH',
-                    estimatedStoryPoints: 5,
-                    acceptanceCriteriaGherkin: 'Scenario: Live\nGiven X\nWhen Y\nThen Z',
-                  },
-                ],
-              }),
-          },
-        }),
-      }),
+      models: {
+        generateContent: jest.fn().mockResolvedValue({ text: JSON.stringify(liveResponse) }),
+      },
     };
 
     const { app } = createServer(aiService);

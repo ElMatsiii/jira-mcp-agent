@@ -4,7 +4,7 @@
  * to the deterministic offline heuristic rule engine.
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, Schema } from '@google/genai';
 import {
   DecomposeEpicRequest,
   DecomposeEpicResponse,
@@ -71,14 +71,20 @@ export interface GeminiFailureDetails {
   hint: string | null;
 }
 
-/** Extracts the HTTP status from SDK errors (`status`/`code` fields or a "[404 Not Found]" message). */
+/**
+ * Extracts the HTTP status from SDK errors: `ApiError.status` from @google/genai, a `code` field,
+ * or a status embedded in the message (e.g. "[404 Not Found]" or `"code":404`).
+ */
 export function extractHttpStatus(error: unknown): number | null {
   const candidate = error as { status?: unknown; code?: unknown; message?: unknown } | null;
   for (const value of [candidate?.status, candidate?.code]) {
     if (typeof value === 'number' && value >= 100 && value <= 599) return value;
   }
   const message = typeof candidate?.message === 'string' ? candidate.message : String(error ?? '');
-  const match = message.match(/\[(\d{3})[^\]]*\]/) || message.match(/\b(?:status|HTTP)\s*:?\s*(\d{3})\b/i);
+  const match =
+    message.match(/\[(\d{3})[^\]]*\]/) ||
+    message.match(/\b(?:status|HTTP)\s*:?\s*(\d{3})\b/i) ||
+    message.match(/"code"\s*:\s*(\d{3})\b/);
   return match ? Number(match[1]) : null;
 }
 
@@ -92,7 +98,7 @@ export function hintForGeminiFailure(httpStatus: number | null, timedOut: boolea
 }
 
 export class GeminiService {
-  private genAI: GoogleGenerativeAI | null = null;
+  private genAI: GoogleGenAI | null = null;
   private readonly modelName: string;
   private readonly timeoutMs: number;
   private readonly forceOffline: boolean;
@@ -114,7 +120,8 @@ export class GeminiService {
       this.offlineReason = 'GEMINI_API_KEY no está definida o está vacía';
     } else {
       try {
-        this.genAI = new GoogleGenerativeAI(apiKey.trim());
+        // The key is sent as-is (x-goog-api-key); both "AIza..." and the newer "AQ." keys work.
+        this.genAI = new GoogleGenAI({ apiKey: apiKey.trim() });
       } catch (err) {
         this.offlineReason = `no se pudo inicializar el SDK de Gemini (${err instanceof Error ? err.message : String(err)})`;
         this.genAI = null;
@@ -160,7 +167,7 @@ export class GeminiService {
    */
   public async safeExecute<T>(
     operationName: string,
-    apiAction: () => Promise<T>,
+    apiAction: (signal: AbortSignal) => Promise<T>,
     fallbackAction: () => T
   ): Promise<AIServiceResult<T>> {
     const startTime = Date.now();
@@ -176,15 +183,19 @@ export class GeminiService {
       };
     }
 
-    // 2. Race live call against timeout guard
+    // 2. Race live call against timeout guard; on timeout also abort the in-flight HTTP request
+    const controller = new AbortController();
     try {
       let timer: NodeJS.Timeout | null = null;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new GeminiTimeoutError(this.timeoutMs)), this.timeoutMs);
+        timer = setTimeout(() => {
+          reject(new GeminiTimeoutError(this.timeoutMs));
+          controller.abort();
+        }, this.timeoutMs);
       });
 
       const apiResult = await Promise.race([
-        apiAction().finally(() => {
+        apiAction(controller.signal).finally(() => {
           if (timer) clearTimeout(timer);
         }),
         timeoutPromise,
@@ -245,35 +256,48 @@ export class GeminiService {
   }
 
   /**
+   * Single entry point to the Gemini API (@google/genai): JSON mode, optional response schema,
+   * shared system instruction, and the abort signal from safeExecute's timeout guard.
+   */
+  private async generateJson<T>(
+    prompt: string,
+    options: { temperature: number; responseSchema?: Schema },
+    signal?: AbortSignal
+  ): Promise<T> {
+    if (!this.genAI) throw new Error('Gemini SDK not initialized');
+
+    const response = await this.genAI.models.generateContent({
+      model: this.modelName,
+      contents: prompt,
+      config: {
+        systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
+        responseMimeType: 'application/json',
+        ...(options.responseSchema ? { responseSchema: options.responseSchema } : {}),
+        temperature: options.temperature,
+        ...(signal ? { abortSignal: signal } : {}),
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      const reason = response.candidates?.[0]?.finishReason ?? response.promptFeedback?.blockReason ?? 'desconocido';
+      throw new Error(`Gemini devolvió una respuesta vacía (motivo: ${reason})`);
+    }
+    return this.parseJSONSafely<T>(text);
+  }
+
+  /**
    * Feature 26 & 27: Decompose Epic
    */
   public async decomposeEpic(request: DecomposeEpicRequest): Promise<AIServiceResult<DecomposeEpicResponse>> {
     return this.safeExecute<DecomposeEpicResponse>(
       'decomposeEpic',
-      async () => {
-        if (!this.genAI) throw new Error('Gemini SDK not initialized');
-
-        const model = this.genAI.getGenerativeModel({
-          model: this.modelName,
-          systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: epicDecompositionResponseSchema,
-            temperature: 0.2,
-          },
-        });
-
-        const prompt = buildDecomposeEpicPrompt(
-          request.epicTitle,
-          request.epicDescription,
-          request.projectKey,
-          request.targetSprintCount
-        );
-
-        const response = await model.generateContent(prompt);
-        const text = response.response.text();
-        return this.parseJSONSafely<DecomposeEpicResponse>(text);
-      },
+      (signal) =>
+        this.generateJson<DecomposeEpicResponse>(
+          buildDecomposeEpicPrompt(request.epicTitle, request.epicDescription, request.projectKey, request.targetSprintCount),
+          { temperature: 0.2, responseSchema: epicDecompositionResponseSchema },
+          signal
+        ),
       () => OfflineFallbackEngine.decomposeEpic(request)
     );
   }
@@ -284,30 +308,12 @@ export class GeminiService {
   public async planSprint(request: PlanSprintRequest): Promise<AIServiceResult<PlanSprintResponse>> {
     return this.safeExecute<PlanSprintResponse>(
       'planSprint',
-      async () => {
-        if (!this.genAI) throw new Error('Gemini SDK not initialized');
-
-        const model = this.genAI.getGenerativeModel({
-          model: this.modelName,
-          systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: sprintPlanningResponseSchema,
-            temperature: 0.1,
-          },
-        });
-
-        const prompt = buildPlanSprintPrompt(
-          request.sprintGoal,
-          request.teamCapacityStoryPoints,
-          request.candidateIssues,
-          request.velocityHistory
-        );
-
-        const response = await model.generateContent(prompt);
-        const text = response.response.text();
-        return this.parseJSONSafely<PlanSprintResponse>(text);
-      },
+      (signal) =>
+        this.generateJson<PlanSprintResponse>(
+          buildPlanSprintPrompt(request.sprintGoal, request.teamCapacityStoryPoints, request.candidateIssues, request.velocityHistory),
+          { temperature: 0.1, responseSchema: sprintPlanningResponseSchema },
+          signal
+        ),
       () => OfflineFallbackEngine.planSprint(request)
     );
   }
@@ -318,32 +324,19 @@ export class GeminiService {
   public async diagnoseMetrics(request: DiagnoseMetricsRequest): Promise<AIServiceResult<DiagnoseMetricsResponse>> {
     return this.safeExecute<DiagnoseMetricsResponse>(
       'diagnoseMetrics',
-      async () => {
-        if (!this.genAI) throw new Error('Gemini SDK not initialized');
-
-        const model = this.genAI.getGenerativeModel({
-          model: this.modelName,
-          systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: metricsDiagnosisResponseSchema,
-            temperature: 0.2,
-          },
-        });
-
-        const prompt = buildDiagnoseMetricsPrompt(
-          request.sprintId,
-          request.sprintName,
-          request.burndownData,
-          request.blockedIssuesCount,
-          request.velocityTrend,
-          request.alerts
-        );
-
-        const response = await model.generateContent(prompt);
-        const text = response.response.text();
-        return this.parseJSONSafely<DiagnoseMetricsResponse>(text);
-      },
+      (signal) =>
+        this.generateJson<DiagnoseMetricsResponse>(
+          buildDiagnoseMetricsPrompt(
+            request.sprintId,
+            request.sprintName,
+            request.burndownData,
+            request.blockedIssuesCount,
+            request.velocityTrend,
+            request.alerts
+          ),
+          { temperature: 0.2, responseSchema: metricsDiagnosisResponseSchema },
+          signal
+        ),
       () => OfflineFallbackEngine.diagnoseMetrics(request)
     );
   }
@@ -368,22 +361,12 @@ export class GeminiService {
   public async estimateStoryPoints(request: EstimateStoryPointsRequest): Promise<AIServiceResult<EstimateStoryPointsResponse>> {
     return this.safeExecute<EstimateStoryPointsResponse>(
       'estimateStoryPoints',
-      async () => {
-        if (!this.genAI) throw new Error('Gemini SDK not initialized');
-
-        const model = this.genAI.getGenerativeModel({
-          model: this.modelName,
-          systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-          },
-        });
-
-        const prompt = buildEstimatePrompt(request.title, request.description, request.type);
-        const response = await model.generateContent(prompt);
-        return this.parseJSONSafely<EstimateStoryPointsResponse>(response.response.text());
-      },
+      (signal) =>
+        this.generateJson<EstimateStoryPointsResponse>(
+          buildEstimatePrompt(request.title, request.description, request.type),
+          { temperature: 0.1 },
+          signal
+        ),
       () => OfflineFallbackEngine.estimateStoryPointsFull(request)
     );
   }
@@ -394,22 +377,12 @@ export class GeminiService {
   public async generateAcceptanceCriteria(request: GenerateAcceptanceCriteriaRequest): Promise<AIServiceResult<GenerateAcceptanceCriteriaResponse>> {
     return this.safeExecute<GenerateAcceptanceCriteriaResponse>(
       'generateAcceptanceCriteria',
-      async () => {
-        if (!this.genAI) throw new Error('Gemini SDK not initialized');
-
-        const model = this.genAI.getGenerativeModel({
-          model: this.modelName,
-          systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.2,
-          },
-        });
-
-        const prompt = buildGherkinPrompt(request.title, request.description, request.userRole);
-        const response = await model.generateContent(prompt);
-        return this.parseJSONSafely<GenerateAcceptanceCriteriaResponse>(response.response.text());
-      },
+      (signal) =>
+        this.generateJson<GenerateAcceptanceCriteriaResponse>(
+          buildGherkinPrompt(request.title, request.description, request.userRole),
+          { temperature: 0.2 },
+          signal
+        ),
       () => OfflineFallbackEngine.generateAcceptanceCriteriaFull(request)
     );
   }
@@ -420,28 +393,12 @@ export class GeminiService {
   public async breakdownTask(request: BreakdownTaskRequest): Promise<AIServiceResult<BreakdownTaskResponse>> {
     return this.safeExecute<BreakdownTaskResponse>(
       'breakdownTask',
-      async () => {
-        if (!this.genAI) throw new Error('Gemini SDK not initialized');
-
-        const model = this.genAI.getGenerativeModel({
-          model: this.modelName,
-          systemInstruction: SYSTEM_SCRUM_MASTER_INSTRUCTION,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: taskBreakdownResponseSchema,
-            temperature: 0.2,
-          },
-        });
-
-        const prompt = buildBreakdownTaskPrompt(
-          request.title,
-          request.description,
-          request.projectKey,
-          request.maxSubtasks
-        );
-        const response = await model.generateContent(prompt);
-        return this.parseJSONSafely<BreakdownTaskResponse>(response.response.text());
-      },
+      (signal) =>
+        this.generateJson<BreakdownTaskResponse>(
+          buildBreakdownTaskPrompt(request.title, request.description, request.projectKey, request.maxSubtasks),
+          { temperature: 0.2, responseSchema: taskBreakdownResponseSchema },
+          signal
+        ),
       () => OfflineFallbackEngine.breakdownTask(request)
     );
   }
