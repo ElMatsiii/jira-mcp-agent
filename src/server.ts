@@ -34,8 +34,10 @@ export function startServer(port?: number, customAiService?: GeminiService): Pro
 
     httpServer.listen(listenPort, () => {
       console.log(`[Jira-MCP-Agent] Server listening on HTTP port :${listenPort}`);
-      console.log(`[Jira-MCP-Agent] Active mode: ${aiService.getMode()} (${aiService.getModelName()})`);
-      console.log(`[Jira-MCP-Agent] REST endpoints: /agent/decompose-epic, /agent/plan-sprint, /agent/diagnose-metrics, /agent/improve-story, /healthz`);
+      const modeLine = `[Jira-MCP-Agent] Active mode: ${aiService.describeMode()}`;
+      if (aiService.isLiveMode()) console.log(modeLine);
+      else console.warn(modeLine);
+      console.log(`[Jira-MCP-Agent] REST endpoints: /agent/decompose-epic, /agent/plan-sprint, /agent/diagnose-metrics, /agent/improve-story, /agent/breakdown-task, /healthz`);
       console.log(`[Jira-MCP-Agent] MCP SSE transport: /sse -> /messages`);
 
       resolve({ httpServer, app, mcpServer, aiService });

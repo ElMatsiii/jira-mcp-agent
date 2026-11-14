@@ -173,7 +173,8 @@ export interface HealthCheckResponse {
 
 export interface AIServiceResult<T> {
   data: T;
-  source: 'gemini-2.0-flash' | 'offline-heuristic';
+  /** Gemini model that produced the answer (e.g. "gemini-3.5-flash-lite"), or 'offline-heuristic'. */
+  source: string;
   executionTimeMs: number;
   model: string;
 }

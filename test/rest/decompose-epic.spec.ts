@@ -33,7 +33,7 @@ describe('POST /agent/decompose-epic', () => {
     }
   });
 
-  it('sets x-ai-engine to gemini-2.0-flash when live model responds', async () => {
+  it('sets x-ai-engine to the live model name when Gemini responds', async () => {
     const aiService = new GeminiService({ apiKey: 'fake-api-key' });
 
     (aiService as any).genAI = {
@@ -63,7 +63,7 @@ describe('POST /agent/decompose-epic', () => {
     const res = await request(app).post('/agent/decompose-epic').send({ epicTitle: 'Live Epic' });
 
     expect(res.status).toBe(200);
-    expect(res.headers['x-ai-engine']).toBe('gemini-2.0-flash');
+    expect(res.headers['x-ai-engine']).toBe('gemini-3.5-flash-lite');
     expect(res.body.stories[0].title).toBe('Live Story');
   });
 

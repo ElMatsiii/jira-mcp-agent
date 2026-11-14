@@ -7,7 +7,7 @@ describe('GeminiService', () => {
       const service = new GeminiService({ forceOffline: true });
       expect(service.isLiveMode()).toBe(false);
       expect(service.getMode()).toBe('mock');
-      expect(service.getModelName()).toBe('gemini-2.0-flash');
+      expect(service.getModelName()).toBe('gemini-3.5-flash-lite');
     });
 
     it('decomposes epic via offline fallback engine', async () => {
@@ -170,7 +170,7 @@ describe('GeminiService', () => {
       };
 
       const res = await service.decomposeEpic({ epicTitle: 'Fence Test Epic' });
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.epicTitle).toBe('Fence Test Epic');
       expect(res.data.stories[0].title).toBe('Story 1');
     });
@@ -202,7 +202,7 @@ describe('GeminiService', () => {
         candidateIssues: TEST_FIXTURES.candidateIssues,
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.allocatedStoryPoints).toBe(13);
       expect(res.data.rationale).toContain('Gemini 2.0 Flash');
     });
@@ -232,7 +232,7 @@ describe('GeminiService', () => {
         burndownData: TEST_FIXTURES.healthyBurndown,
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.healthStatus).toBe('HEALTHY');
     });
 
@@ -260,7 +260,7 @@ describe('GeminiService', () => {
         title: 'Kafka Consumer',
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.storyPoints).toBe(5);
     });
 
@@ -286,7 +286,7 @@ describe('GeminiService', () => {
         title: 'Live Criteria',
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.acceptanceCriteriaGherkin).toContain('Feature: Live Criteria');
     });
   });

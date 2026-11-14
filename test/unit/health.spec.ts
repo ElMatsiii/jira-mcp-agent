@@ -11,7 +11,7 @@ describe('GET /healthz Controller', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
-    expect(res.body.model).toBe('gemini-2.0-flash');
+    expect(res.body.model).toBe('gemini-3.5-flash-lite');
     expect(res.body.mode).toBe('mock');
     expect(res.body.version).toBe('1.0.0');
     expect(res.body.timestamp).toBeDefined();
