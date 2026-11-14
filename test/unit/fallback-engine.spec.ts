@@ -79,7 +79,8 @@ describe('OfflineFallbackEngine', () => {
       expect(res.epicTitle).toBe(TEST_FIXTURES.authEpic.epicTitle);
       expect(res.stories.length).toBeGreaterThanOrEqual(3);
       for (const story of res.stories) {
-        expect(story.title).toContain('[AUTH]');
+        expect(story.title).not.toContain('AUTH');
+        expect(story.title).not.toMatch(/^\[/);
         expect(story.estimatedStoryPoints).toBeGreaterThan(0);
         expect(story.acceptanceCriteriaGherkin).toContain('Scenario:');
         expect(story.acceptanceCriteriaGherkin).toContain('Given');

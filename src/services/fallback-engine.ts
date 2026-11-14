@@ -162,7 +162,7 @@ export class OfflineFallbackEngine {
    * Satisfies Feature 26 & 27 contracts.
    */
   public static decomposeEpic(request: DecomposeEpicRequest): DecomposeEpicResponse {
-    const { epicTitle, epicDescription = '', projectKey = 'JIRA' } = request;
+    const { epicTitle, epicDescription = '' } = request;
     const combined = `${epicTitle} ${epicDescription}`.toLowerCase();
     const stories: DecomposedStory[] = [];
 
@@ -176,7 +176,7 @@ export class OfflineFallbackEngine {
     ) {
       stories.push(
         {
-          title: `[${projectKey}] User Authentication & JWT Verification Flow`,
+          title: `User Authentication & JWT Verification Flow`,
           description: `As a user, I want secure authentication via OAuth2/JWT so that access to the system is protected.`,
           type: 'STORY',
           priority: 'CRITICAL',
@@ -188,7 +188,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Multi-Tenant Isolation & Organization Scoping`,
+          title: `Multi-Tenant Isolation & Organization Scoping`,
           description: `As an organization administrator, I want tenant-scoped data isolation so that users only see data within their domain.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -200,7 +200,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Role-Based Access Control Guards & Middleware`,
+          title: `Role-Based Access Control Guards & Middleware`,
           description: `As a system engineer, I want API authorization guards so that endpoints enforce permissions according to user roles.`,
           type: 'TASK',
           priority: 'HIGH',
@@ -212,7 +212,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Security Audit Logging & Session Invalidation`,
+          title: `Security Audit Logging & Session Invalidation`,
           description: `As a compliance officer, I want security events logged and expired tokens revoked so that session breaches are prevented.`,
           type: 'STORY',
           priority: 'MEDIUM',
@@ -235,7 +235,7 @@ export class OfflineFallbackEngine {
     ) {
       stories.push(
         {
-          title: `[${projectKey}] Domain Entity Schema & Persistence Repository`,
+          title: `Domain Entity Schema & Persistence Repository`,
           description: `As a backend engineer, I want database entities and migration scripts so that state is persisted reliably.`,
           type: 'TASK',
           priority: 'CRITICAL',
@@ -247,7 +247,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] gRPC and REST Endpoint Handlers`,
+          title: `gRPC and REST Endpoint Handlers`,
           description: `As an API consumer, I want RPC and REST endpoints for creating and querying items with input validation.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -259,7 +259,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Interactive Kanban State Transitions & Event Streaming`,
+          title: `Interactive Kanban State Transitions & Event Streaming`,
           description: `As a team member, I want state transitions between TODO, IN_PROGRESS, and DONE to emit domain events.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -271,7 +271,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Automated Unit and Contract Integration Tests`,
+          title: `Automated Unit and Contract Integration Tests`,
           description: `As a QA engineer, I want automated test suites verifying status transitions and boundary conditions.`,
           type: 'TASK',
           priority: 'MEDIUM',
@@ -294,7 +294,7 @@ export class OfflineFallbackEngine {
     ) {
       stories.push(
         {
-          title: `[${projectKey}] Partitioned Event Consumer & Ingestion Pipeline`,
+          title: `Partitioned Event Consumer & Ingestion Pipeline`,
           description: `As a platform engineer, I want high-throughput stream processing so that incoming messages are ingested without backpressure.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -306,7 +306,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Real-time Aggregation Engine & Metrics Snapshot`,
+          title: `Real-time Aggregation Engine & Metrics Snapshot`,
           description: `As an analyst, I want aggregated velocity and burndown snapshots so that metrics reflect live progress.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -318,7 +318,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Dead-Letter Queue & Resilient Error Interceptor`,
+          title: `Dead-Letter Queue & Resilient Error Interceptor`,
           description: `As a reliability engineer, I want poisoned messages rerouted to a dead-letter queue without stalling the consumer group.`,
           type: 'TASK',
           priority: 'MEDIUM',
@@ -335,7 +335,7 @@ export class OfflineFallbackEngine {
     else {
       stories.push(
         {
-          title: `[${projectKey}] Implement ${epicTitle} - Core Data Contracts`,
+          title: `Implement ${epicTitle} - Core Data Contracts`,
           description: `As a software engineer, I want schema definitions and data contracts so that domain entities are structured.`,
           type: 'TASK',
           priority: 'HIGH',
@@ -347,7 +347,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Implement ${epicTitle} - Inter-Service Logic`,
+          title: `Implement ${epicTitle} - Inter-Service Logic`,
           description: `As an API consumer, I want service endpoints and inter-service dispatch so that business operations execute cleanly.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -359,7 +359,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Implement ${epicTitle} - Event Streaming & Analytics`,
+          title: `Implement ${epicTitle} - Event Streaming & Analytics`,
           description: `As a downstream consumer, I want state change events published to Kafka so that analytics reflect current progress.`,
           type: 'STORY',
           priority: 'MEDIUM',

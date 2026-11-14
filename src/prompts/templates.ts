@@ -38,7 +38,7 @@ Guidelines:
 2. Write each description in standard agile format: "As a [role], I want to [action], so that [business value]".
 3. Assign Fibonacci story points (1, 2, 3, 5, or 8) based on technical complexity and uncertainty.
 4. Provide acceptance criteria in complete Gherkin format with at least one happy path and one negative/validation scenario.
-5. Prefix story titles with "[${projectKey}]" for traceability.`;
+5. Do NOT prefix story titles with the project key, an issue key or brackets (e.g. "[${projectKey}]", "${projectKey}-1:"); the application assigns issue keys itself.`;
 }
 
 /**
@@ -150,7 +150,7 @@ Project Key: ${projectKey}
 Instructions:
 1. If the task is broad (such as "crear la base de la pagina web"), decompose it into distinct technical/operational subtasks (e.g., Crear Frontend, Crear Backend API, Configurar Base de Datos & Modelos, Configurar Autenticación/Seguridad, Pipeline CI/CD).
 2. For each subtask, provide:
-   - title: concise and action-oriented
+   - title: concise and action-oriented, without the project key, an issue key or brackets as prefix
    - description: clear explanation of what needs to be implemented
    - type: TASK, STORY, or BUG
    - priority: LOW, MEDIUM, HIGH, or CRITICAL

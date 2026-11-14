@@ -38,6 +38,10 @@ import {
   buildBreakdownTaskPrompt,
 } from '../prompts/templates';
 import { OfflineFallbackEngine } from './fallback-engine';
+import { stripProjectKeyPrefix } from '../utils/title-sanitizer';
+
+/** Key the prompt templates fall back to when the request has none. */
+const DEFAULT_PROMPT_PROJECT_KEY = 'JIRA';
 
 export interface GeminiServiceConfig {
   apiKey?: string;
@@ -290,7 +294,7 @@ export class GeminiService {
    * Feature 26 & 27: Decompose Epic
    */
   public async decomposeEpic(request: DecomposeEpicRequest): Promise<AIServiceResult<DecomposeEpicResponse>> {
-    return this.safeExecute<DecomposeEpicResponse>(
+    const result = await this.safeExecute<DecomposeEpicResponse>(
       'decomposeEpic',
       (signal) =>
         this.generateJson<DecomposeEpicResponse>(
@@ -300,6 +304,11 @@ export class GeminiService {
         ),
       () => OfflineFallbackEngine.decomposeEpic(request)
     );
+    const key = request.projectKey || DEFAULT_PROMPT_PROJECT_KEY;
+    if (Array.isArray(result.data?.stories)) {
+      result.data.stories = result.data.stories.map((story) => ({ ...story, title: stripProjectKeyPrefix(story.title, key) }));
+    }
+    return result;
   }
 
   /**
@@ -391,7 +400,7 @@ export class GeminiService {
    * Task Breakdown & Subtask Segmentation
    */
   public async breakdownTask(request: BreakdownTaskRequest): Promise<AIServiceResult<BreakdownTaskResponse>> {
-    return this.safeExecute<BreakdownTaskResponse>(
+    const result = await this.safeExecute<BreakdownTaskResponse>(
       'breakdownTask',
       (signal) =>
         this.generateJson<BreakdownTaskResponse>(
@@ -401,5 +410,10 @@ export class GeminiService {
         ),
       () => OfflineFallbackEngine.breakdownTask(request)
     );
+    const key = request.projectKey || DEFAULT_PROMPT_PROJECT_KEY;
+    if (Array.isArray(result.data?.subtasks)) {
+      result.data.subtasks = result.data.subtasks.map((subtask) => ({ ...subtask, title: stripProjectKeyPrefix(subtask.title, key) }));
+    }
+    return result;
   }
 }
