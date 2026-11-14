@@ -110,10 +110,10 @@ export function buildEstimatePrompt(title: string, description: string = '', typ
 Title: ${title}
 Description: ${description}
 
-Evaluate technical complexity, uncertainty, and effort. Return a JSON object with:
-- storyPoints (integer from Fibonacci series)
+Evaluate technical complexity, uncertainty, and effort. Return a JSON object with exactly these fields:
+- storyPoints (integer, one of 1, 2, 3, 5, 8, 13)
 - confidence (number from 0.0 to 1.0)
-- reasoning (explanation)
+- reasoning (short explanation)
 - complexityFactors (array of strings)`;
 }
 
@@ -129,7 +129,9 @@ Primary User Persona: ${userRole}
 Include:
 1. Happy path scenario
 2. Edge case / validation error scenario
-Return valid Gherkin formatted text and the scenariosCount.`;
+Return a JSON object with exactly these fields:
+- acceptanceCriteriaGherkin (string with the complete Gherkin text: Feature, Scenarios and Given/When/Then steps)
+- scenariosCount (integer, number of scenarios)`;
 }
 
 /**

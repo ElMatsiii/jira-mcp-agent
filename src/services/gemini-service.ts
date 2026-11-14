@@ -27,6 +27,8 @@ import {
   sprintPlanningResponseSchema,
   metricsDiagnosisResponseSchema,
   taskBreakdownResponseSchema,
+  storyEstimationResponseSchema,
+  acceptanceCriteriaResponseSchema,
 } from '../schemas/gemini-schemas';
 import {
   SYSTEM_SCRUM_MASTER_INSTRUCTION,
@@ -39,6 +41,7 @@ import {
 } from '../prompts/templates';
 import { OfflineFallbackEngine } from './fallback-engine';
 import { stripProjectKeyPrefix } from '../utils/title-sanitizer';
+import { normalizeAcceptanceCriteria, normalizeEstimate } from '../utils/response-normalizers';
 
 /** Key the prompt templates fall back to when the request has none. */
 const DEFAULT_PROMPT_PROJECT_KEY = 'JIRA';
@@ -370,11 +373,13 @@ export class GeminiService {
   public async estimateStoryPoints(request: EstimateStoryPointsRequest): Promise<AIServiceResult<EstimateStoryPointsResponse>> {
     return this.safeExecute<EstimateStoryPointsResponse>(
       'estimateStoryPoints',
-      (signal) =>
-        this.generateJson<EstimateStoryPointsResponse>(
-          buildEstimatePrompt(request.title, request.description, request.type),
-          { temperature: 0.1 },
-          signal
+      async (signal) =>
+        normalizeEstimate(
+          await this.generateJson<unknown>(
+            buildEstimatePrompt(request.title, request.description, request.type),
+            { temperature: 0.1, responseSchema: storyEstimationResponseSchema },
+            signal
+          )
         ),
       () => OfflineFallbackEngine.estimateStoryPointsFull(request)
     );
@@ -386,11 +391,13 @@ export class GeminiService {
   public async generateAcceptanceCriteria(request: GenerateAcceptanceCriteriaRequest): Promise<AIServiceResult<GenerateAcceptanceCriteriaResponse>> {
     return this.safeExecute<GenerateAcceptanceCriteriaResponse>(
       'generateAcceptanceCriteria',
-      (signal) =>
-        this.generateJson<GenerateAcceptanceCriteriaResponse>(
-          buildGherkinPrompt(request.title, request.description, request.userRole),
-          { temperature: 0.2 },
-          signal
+      async (signal) =>
+        normalizeAcceptanceCriteria(
+          await this.generateJson<unknown>(
+            buildGherkinPrompt(request.title, request.description, request.userRole),
+            { temperature: 0.2, responseSchema: acceptanceCriteriaResponseSchema },
+            signal
+          )
         ),
       () => OfflineFallbackEngine.generateAcceptanceCriteriaFull(request)
     );

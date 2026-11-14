@@ -125,7 +125,7 @@ describe('OfflineFallbackEngine', () => {
       expect(res.allocatedStoryPoints).toBe(13);
       expect(res.recommendedIssueIds).toEqual(['iss-1', 'iss-2']);
       expect(res.capacityUtilizationPercent).toBe(87);
-      expect(res.riskAssessment).toBe('OPTIMAL');
+      expect(res.riskAssessment).toBe('LOW');
     });
 
     it('returns empty selection when capacity is 0 (T2-F28-02)', () => {
@@ -163,11 +163,11 @@ describe('OfflineFallbackEngine', () => {
 
       expect(res.allocatedStoryPoints).toBe(0);
       expect(res.recommendedIssueIds).toEqual([]);
-      expect(res.riskAssessment).toBe('HIGH_CAPACITY_RISK');
+      expect(res.riskAssessment).toBe('HIGH');
       expect(res.rationale).toContain('Backlog deferral recommended');
     });
 
-    it('marks risk as MEDIUM_CAPACITY_RISK when allocation exceeds 90%', () => {
+    it('marks risk as MEDIUM when allocation exceeds 90%', () => {
       const res = OfflineFallbackEngine.planSprint({
         sprintGoal: 'High capacity test',
         teamCapacityStoryPoints: 10,
@@ -179,7 +179,7 @@ describe('OfflineFallbackEngine', () => {
 
       expect(res.allocatedStoryPoints).toBe(10);
       expect(res.capacityUtilizationPercent).toBe(100);
-      expect(res.riskAssessment).toBe('MEDIUM_CAPACITY_RISK');
+      expect(res.riskAssessment).toBe('MEDIUM');
     });
   });
 

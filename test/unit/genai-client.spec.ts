@@ -1,6 +1,11 @@
 import { ApiError, GoogleGenAI, Type } from '@google/genai';
 import { GeminiService, extractHttpStatus } from '../../src/services/gemini-service';
-import { epicDecompositionResponseSchema, taskBreakdownResponseSchema } from '../../src/schemas/gemini-schemas';
+import {
+  acceptanceCriteriaResponseSchema,
+  epicDecompositionResponseSchema,
+  storyEstimationResponseSchema,
+  taskBreakdownResponseSchema,
+} from '../../src/schemas/gemini-schemas';
 import { SYSTEM_SCRUM_MASTER_INSTRUCTION } from '../../src/prompts/templates';
 import { createFailingGenAIClient, createMockGenAIClient } from '../mocks/gemini.mock';
 
@@ -45,7 +50,7 @@ describe('@google/genai integration', () => {
     expect(params.config.abortSignal.aborted).toBe(false);
   });
 
-  it('omits responseSchema for free-form JSON operations', async () => {
+  it('sends the estimation and acceptance-criteria response schemas (improve-story)', async () => {
     const service = liveService();
     const client = createMockGenAIClient({ storyPoints: 3, confidence: 0.8, reasoning: 'ok', complexityFactors: [] });
     (service as any).genAI = client;
@@ -54,8 +59,13 @@ describe('@google/genai integration', () => {
 
     const { config } = client.models.generateContent.mock.calls[0][0];
     expect(config.responseMimeType).toBe('application/json');
-    expect(config).not.toHaveProperty('responseSchema');
+    expect(config.responseSchema).toBe(storyEstimationResponseSchema);
     expect(config.temperature).toBe(0.1);
+
+    const criteriaClient = createMockGenAIClient({ acceptanceCriteriaGherkin: 'Feature: X\nScenario: A', scenariosCount: 1 });
+    (service as any).genAI = criteriaClient;
+    await service.generateAcceptanceCriteria({ title: 'Login' });
+    expect(criteriaClient.models.generateContent.mock.calls[0][0].config.responseSchema).toBe(acceptanceCriteriaResponseSchema);
   });
 
   it('runs breakdownTask live with its schema', async () => {

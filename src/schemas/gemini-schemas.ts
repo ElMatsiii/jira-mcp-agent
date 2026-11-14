@@ -196,3 +196,48 @@ export const taskBreakdownResponseSchema: Schema = {
   required: ['parentTitle', 'subtasks'],
 };
 
+
+/**
+ * Structured schema for Story Point Estimation (improve-story)
+ */
+export const storyEstimationResponseSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    storyPoints: {
+      type: Type.INTEGER,
+      description: 'Fibonacci story points: 1, 2, 3, 5, 8 or 13',
+    },
+    confidence: {
+      type: Type.NUMBER,
+      description: 'Confidence of the estimate, from 0.0 to 1.0',
+    },
+    reasoning: {
+      type: Type.STRING,
+      description: 'Short explanation of the estimate',
+    },
+    complexityFactors: {
+      type: Type.ARRAY,
+      description: 'Main complexity drivers',
+      items: { type: Type.STRING },
+    },
+  },
+  required: ['storyPoints', 'confidence', 'reasoning', 'complexityFactors'],
+};
+
+/**
+ * Structured schema for Gherkin Acceptance Criteria (improve-story)
+ */
+export const acceptanceCriteriaResponseSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    acceptanceCriteriaGherkin: {
+      type: Type.STRING,
+      description: 'Complete Gherkin text: Feature, Scenarios and Given/When/Then steps',
+    },
+    scenariosCount: {
+      type: Type.INTEGER,
+      description: 'Number of scenarios in acceptanceCriteriaGherkin',
+    },
+  },
+  required: ['acceptanceCriteriaGherkin', 'scenariosCount'],
+};

@@ -395,7 +395,7 @@ export class OfflineFallbackEngine {
         allocatedStoryPoints: 0,
         capacityUtilizationPercent: 0,
         recommendedIssueIds: [],
-        riskAssessment: 'OPTIMAL',
+        riskAssessment: 'LOW',
         rationale: 'Capacity is 0 or candidate issues list is empty. No issues allocated.',
       };
     }
@@ -407,7 +407,7 @@ export class OfflineFallbackEngine {
         allocatedStoryPoints: 0,
         capacityUtilizationPercent: 0,
         recommendedIssueIds: [],
-        riskAssessment: 'HIGH_CAPACITY_RISK',
+        riskAssessment: 'HIGH',
         rationale: `All candidate issues exceed total team capacity (${capacity} pts). Backlog deferral recommended.`,
       };
     }
@@ -425,7 +425,7 @@ export class OfflineFallbackEngine {
     }
 
     const utilization = Math.round((allocated / capacity) * 100);
-    const riskAssessment = allocated > capacity * 0.9 ? 'MEDIUM_CAPACITY_RISK' : 'OPTIMAL';
+    const riskAssessment = allocated > capacity * 0.9 ? 'MEDIUM' : 'LOW';
     const rationale = `Selected ${recommended.length} candidate issues matching team velocity capacity of ${capacity} points (${utilization}% utilization).`;
 
     return {
