@@ -11,10 +11,15 @@ Your responsibilities:
 3. Diagnose sprint burndown deviations, detecting scope creep (>20%), velocity deficits, and blocked work impediments with actionable recovery steps.
 
 STRICT CONSTRAINTS:
+- LANGUAGE: every free-text value in the JSON (titles, descriptions, diagnosis, root causes, recommendations, rationale, reasoning, scenario text) MUST be written in Spanish, even when the input is in English. Keep in English only the JSON field names, the enum values (e.g. HEALTHY, AT_RISK, STORY, HIGH) and the Gherkin keywords (Feature, Scenario, Given, When, Then, And).
 - Output MUST be valid JSON adhering strictly to the provided responseSchema.
 - NEVER include markdown wrappers like \`\`\`json in the raw text output.
 - All acceptance criteria MUST follow standard Gherkin syntax (Feature, Scenario, Given, When, Then).
 - Story point estimates MUST only use Fibonacci values: 1, 2, 3, 5, 8.`;
+
+/** Appended to every prompt so the answer stays in Spanish even if the model ignores the system instruction. */
+export const SPANISH_OUTPUT_RULE =
+  'Responde en español: todo el texto libre del JSON debe estar en español (los nombres de campos, los valores de enum y las palabras clave Gherkin se mantienen en inglés).';
 
 /**
  * Builds prompt for Epic Decomposition
@@ -38,7 +43,9 @@ Guidelines:
 2. Write each description in standard agile format: "As a [role], I want to [action], so that [business value]".
 3. Assign Fibonacci story points (1, 2, 3, 5, or 8) based on technical complexity and uncertainty.
 4. Provide acceptance criteria in complete Gherkin format with at least one happy path and one negative/validation scenario.
-5. Do NOT prefix story titles with the project key, an issue key or brackets (e.g. "[${projectKey}]", "${projectKey}-1:"); the application assigns issue keys itself.`;
+5. Do NOT prefix story titles with the project key, an issue key or brackets (e.g. "[${projectKey}]", "${projectKey}-1:"); the application assigns issue keys itself.
+
+${SPANISH_OUTPUT_RULE}`;
 }
 
 /**
@@ -68,7 +75,9 @@ Guidelines:
 2. The sum of allocatedStoryPoints must not exceed ${teamCapacityStoryPoints}. Maintain an optimal utilization of 80% to 90% (leaving a 10-20% contingency buffer for unplanned bugs).
 3. If capacity is near 100%, assess risk as HIGH; if between 80-90%, assess as LOW; if below 60%, assess as MEDIUM.
 4. Return the list of recommendedIssueIds in recommended execution order.
-5. Provide a clear rationale explaining why these issues were chosen and how the sprint goal is achieved within capacity.`;
+5. Provide a clear rationale explaining why these issues were chosen and how the sprint goal is achieved within capacity.
+
+${SPANISH_OUTPUT_RULE}`;
 }
 
 /**
@@ -80,26 +89,38 @@ export function buildDiagnoseMetricsPrompt(
   burndownData: BurndownPoint[] = [],
   blockedIssuesCount: number = 0,
   velocityTrend?: number[],
-  alerts?: string[]
+  alerts?: string[],
+  progress?: { asOfDate: string; currentDayNumber: number; totalDays: number }
 ): string {
+  const timeline = progress
+    ? progress.currentDayNumber > 0
+      ? `Today is ${progress.asOfDate}: day ${progress.currentDayNumber} of ${progress.totalDays} of the sprint.`
+      : `Today is ${progress.asOfDate}: the sprint has not started yet (0 of ${progress.totalDays} days elapsed).`
+    : 'Current day: unknown.';
+
   return `Analyze the following sprint metrics and burndown trajectory:
 
 Sprint ID: ${sprintId}
 Sprint Name: ${sprintName}
+${timeline}
 Blocked Issues Count: ${blockedIssuesCount}
 Recorded Alerts: ${alerts && alerts.length > 0 ? alerts.join(', ') : 'None'}
-Recent Velocity History: ${velocityTrend ? velocityTrend.join(', ') : 'N/A'}
+Recent Velocity History: ${velocityTrend && velocityTrend.length > 0 ? velocityTrend.join(', ') : 'N/A'}
 
-Burndown Data (Day, Remaining Points, Ideal Points):
+Burndown Data up to today (Day, Remaining Points, Ideal Points):
 ${JSON.stringify(burndownData, null, 2)}
 
+IMPORTANT: the burndown data only contains the days that already happened. Evaluate the sprint only up to today: do NOT judge, extrapolate as fact, or report deviations for future days, and do not treat the remaining ideal days as missed work.
+
 Analysis Tasks:
-1. Compare remaining points vs ideal points across sprint timeline.
+1. Compare remaining points vs ideal points up to today.
 2. Detect scope creep (any mid-sprint inflation where remaining points increased).
 3. Evaluate velocity deficit (points remaining significantly above ideal curve).
 4. Identify root causes contributing to delivery risks (e.g. blocked issues, scope changes, estimation bias).
 5. Provide 2-4 concrete, actionable agile remediation recommendations (e.g. issue swarming, scope renegotiation, unblocking dependencies).
-6. Classify healthStatus appropriately ('HEALTHY', 'AT_RISK', 'CRITICAL').`;
+6. Classify healthStatus appropriately ('HEALTHY', 'AT_RISK', 'CRITICAL').
+
+${SPANISH_OUTPUT_RULE}`;
 }
 
 /**
@@ -114,7 +135,9 @@ Evaluate technical complexity, uncertainty, and effort. Return a JSON object wit
 - storyPoints (integer, one of 1, 2, 3, 5, 8, 13)
 - confidence (number from 0.0 to 1.0)
 - reasoning (short explanation)
-- complexityFactors (array of strings)`;
+- complexityFactors (array of strings)
+
+${SPANISH_OUTPUT_RULE}`;
 }
 
 /**
@@ -131,7 +154,9 @@ Include:
 2. Edge case / validation error scenario
 Return a JSON object with exactly these fields:
 - acceptanceCriteriaGherkin (string with the complete Gherkin text: Feature, Scenarios and Given/When/Then steps)
-- scenariosCount (integer, number of scenarios)`;
+- scenariosCount (integer, number of scenarios)
+
+${SPANISH_OUTPUT_RULE}`;
 }
 
 /**
@@ -158,6 +183,8 @@ Instructions:
    - priority: LOW, MEDIUM, HIGH, or CRITICAL
    - estimatedStoryPoints: Fibonacci (1, 2, 3, 5, 8)
    - acceptanceCriteriaGherkin: standard Given/When/Then scenario
-3. Return the parentTitle matching the original title and the list of subtasks.`;
+3. Return the parentTitle matching the original title and the list of subtasks.
+
+${SPANISH_OUTPUT_RULE}`;
 }
 

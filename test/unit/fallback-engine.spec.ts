@@ -197,7 +197,7 @@ describe('OfflineFallbackEngine', () => {
       expect(res.healthStatus).toBe('AT_RISK');
       expect(res.rootCauses.length).toBeGreaterThan(0);
       expect(res.actionableRecommendations.length).toBeGreaterThan(0);
-      expect(res.diagnosis).toContain('at risk of velocity deficit');
+      expect(res.diagnosis).toContain('en riesgo por déficit de velocidad');
     });
 
     it('diagnoses on-track sprint as HEALTHY', () => {
@@ -208,7 +208,7 @@ describe('OfflineFallbackEngine', () => {
       });
 
       expect(res.healthStatus).toBe('HEALTHY');
-      expect(res.rootCauses[0]).toContain('ideal burndown trajectory');
+      expect(res.rootCauses[0]).toContain('trayectoria ideal del burndown');
     });
 
     it('includes time-tracking alerts without treating logged hours as a productivity measure', () => {
@@ -233,7 +233,7 @@ describe('OfflineFallbackEngine', () => {
       });
 
       expect(res.healthStatus).toBe('HEALTHY');
-      expect(res.diagnosis).toContain('no burndown data points');
+      expect(res.diagnosis).toContain('aún no tiene días de burndown registrados');
     });
 
     it('flags blocked issues even if burndown is empty', () => {
@@ -244,7 +244,39 @@ describe('OfflineFallbackEngine', () => {
       });
 
       expect(res.healthStatus).toBe('AT_RISK');
-      expect(res.rootCauses[0]).toContain('BLOCKED');
+      expect(res.rootCauses[0]).toContain('BLOQUEADA');
+    });
+
+    it('ignores future days: a sprint on track until today is not flagged for days still to come', () => {
+      // MS3 repeats the last value on future days; judging them would report a false delay.
+      const res = OfflineFallbackEngine.diagnoseMetrics({
+        sprintId: 'sprint-today',
+        asOfDate: '2026-11-17',
+        burndownData: [
+          { day: 0, date: '2026-11-16', idealRemaining: 20, actualRemaining: 20 },
+          { day: 1, date: '2026-11-17', idealRemaining: 15, actualRemaining: 14 },
+          { day: 2, date: '2026-11-18', idealRemaining: 10, actualRemaining: 14 },
+          { day: 3, date: '2026-11-19', idealRemaining: 5, actualRemaining: 14 },
+        ],
+        blockedIssuesCount: 0,
+      });
+
+      expect(res.healthStatus).toBe('HEALTHY');
+      expect(res.diagnosis).toContain('Al 2026-11-17 (día 2 de 4)');
+    });
+
+    it('treats a sprint whose days are all in the future as not started', () => {
+      const res = OfflineFallbackEngine.diagnoseMetrics({
+        sprintId: 'sprint-future',
+        asOfDate: '2026-11-15',
+        burndownData: [
+          { day: 0, date: '2026-11-16', idealRemaining: 10, actualRemaining: 10 },
+          { day: 1, date: '2026-11-17', idealRemaining: 0, actualRemaining: 10 },
+        ],
+      });
+
+      expect(res.healthStatus).toBe('HEALTHY');
+      expect(res.diagnosis).toContain('aún no tiene días de burndown registrados');
     });
   });
 

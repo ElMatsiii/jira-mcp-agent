@@ -96,18 +96,22 @@ export const BurndownPointSchema = z
     day: z.number().int().nonnegative(),
     date: z.string().optional(),
     idealRemaining: z.number().optional(),
-    actualRemaining: z.number().optional(),
+    // null = day that has not happened yet (analytics.reply after the contract change).
+    actualRemaining: z.number().nullable().optional(),
     idealStoryPoints: z.number().optional(),
-    remainingStoryPoints: z.number().optional(),
+    remainingStoryPoints: z.number().nullable().optional(),
   })
-  .transform((pt) => ({
-    day: pt.day,
-    date: pt.date,
-    idealRemaining: pt.idealRemaining ?? pt.idealStoryPoints ?? 0,
-    actualRemaining: pt.actualRemaining ?? pt.remainingStoryPoints ?? 0,
-    idealStoryPoints: pt.idealStoryPoints ?? pt.idealRemaining ?? 0,
-    remainingStoryPoints: pt.remainingStoryPoints ?? pt.actualRemaining ?? 0,
-  }));
+  .transform((pt) => {
+    const actual = pt.actualRemaining ?? pt.remainingStoryPoints ?? undefined;
+    return {
+      day: pt.day,
+      date: pt.date,
+      idealRemaining: pt.idealRemaining ?? pt.idealStoryPoints ?? 0,
+      actualRemaining: actual,
+      idealStoryPoints: pt.idealStoryPoints ?? pt.idealRemaining ?? 0,
+      remainingStoryPoints: actual,
+    };
+  });
 
 export const DiagnoseMetricsInputSchema = z.object({
   sprintId: z.string({ required_error: 'sprintId is mandatory' }).trim().min(1, 'sprintId is mandatory'),
@@ -116,6 +120,11 @@ export const DiagnoseMetricsInputSchema = z.object({
   blockedIssuesCount: z.number().int().nonnegative().optional().default(0),
   velocityTrend: z.array(z.number()).optional().default([]),
   alerts: z.array(z.string()).optional().default([]),
+  /** Day the diagnosis is made (YYYY-MM-DD). Later burndown days are ignored. Defaults to today (UTC). */
+  asOfDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'asOfDate must use the YYYY-MM-DD format')
+    .optional(),
 });
 
 export const DiagnoseMetricsResponseSchema = z.object({

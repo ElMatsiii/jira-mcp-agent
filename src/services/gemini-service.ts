@@ -40,6 +40,7 @@ import {
   buildBreakdownTaskPrompt,
 } from '../prompts/templates';
 import { OfflineFallbackEngine } from './fallback-engine';
+import { selectElapsedBurndown } from './burndown-window';
 import { stripProjectKeyPrefix } from '../utils/title-sanitizer';
 import { normalizeAcceptanceCriteria, normalizeEstimate } from '../utils/response-normalizers';
 
@@ -334,6 +335,14 @@ export class GeminiService {
    * Feature 26 & 27: Diagnose Metrics
    */
   public async diagnoseMetrics(request: DiagnoseMetricsRequest): Promise<AIServiceResult<DiagnoseMetricsResponse>> {
+    // Only the days that already happened are diagnosed (MS3 sends the whole sprint).
+    const window = selectElapsedBurndown(request.burndownData, request.asOfDate);
+    const elapsedRequest: DiagnoseMetricsRequest = {
+      ...request,
+      asOfDate: window.asOfDate,
+      burndownData: window.elapsed,
+    };
+
     return this.safeExecute<DiagnoseMetricsResponse>(
       'diagnoseMetrics',
       (signal) =>
@@ -341,15 +350,16 @@ export class GeminiService {
           buildDiagnoseMetricsPrompt(
             request.sprintId,
             request.sprintName,
-            request.burndownData,
+            window.elapsed,
             request.blockedIssuesCount,
             request.velocityTrend,
-            request.alerts
+            request.alerts,
+            window
           ),
           { temperature: 0.2, responseSchema: metricsDiagnosisResponseSchema },
           signal
         ),
-      () => OfflineFallbackEngine.diagnoseMetrics(request)
+      () => OfflineFallbackEngine.diagnoseMetrics(elapsedRequest)
     );
   }
 

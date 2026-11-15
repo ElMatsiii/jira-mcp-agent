@@ -28,6 +28,7 @@ import {
   BreakdownTaskRequest,
   BreakdownTaskResponse,
 } from '../types';
+import { selectElapsedBurndown } from './burndown-window';
 
 export class OfflineFallbackEngine {
   /**
@@ -445,23 +446,29 @@ export class OfflineFallbackEngine {
   public static diagnoseMetrics(request: DiagnoseMetricsRequest): DiagnoseMetricsResponse {
     const sprintId = request.sprintId;
     const sprintName = request.sprintName || `Sprint ${sprintId}`;
-    const burndown = request.burndownData || [];
+    // Future days are never diagnosed: only the points up to asOfDate (default: today UTC) count.
+    const window = selectElapsedBurndown(request.burndownData || [], request.asOfDate);
+    const burndown = window.elapsed;
     const blockedCount = request.blockedIssuesCount || 0;
     const timeAlerts = request.alerts || [];
+    const dayLabel = window.currentDayNumber > 0
+      ? `Al ${window.asOfDate} (día ${window.currentDayNumber} de ${window.totalDays})`
+      : `Al ${window.asOfDate}`;
 
     if (burndown.length === 0) {
       return {
         healthStatus: blockedCount > 0 ? 'AT_RISK' : 'HEALTHY',
-        diagnosis: `Sprint ${sprintName} has no burndown data points recorded yet. ${timeAlerts.join(' ')}`.trim(),
+        diagnosis: `${dayLabel}, el sprint ${sprintName} aún no tiene días de burndown registrados. ${timeAlerts.join(' ')}`.trim(),
         rootCauses: [
-          ...(blockedCount > 0 ? [`${blockedCount} issues currently flagged as BLOCKED.`] : ['Sprint initialized; awaiting initial task progress.']),
+          ...(blockedCount > 0
+            ? [`${blockedCount} incidencia(s) marcada(s) como BLOQUEADA(S).`]
+            : ['Sprint recién iniciado o por iniciar; todavía no hay avance registrado.']),
           ...timeAlerts,
         ],
-        actionableRecommendations: ['Ensure team transitions tasks and logs daily progress.'],
+        actionableRecommendations: ['Asegurar que el equipo mueva sus tareas en el tablero y registre su avance diario.'],
       };
     }
 
-    const first = burndown[0];
     const latest = burndown[burndown.length - 1];
 
     const actualLatest = latest.actualRemaining ?? latest.remainingStoryPoints ?? 0;
@@ -472,27 +479,27 @@ export class OfflineFallbackEngine {
     const rootCauses: string[] = [];
 
     if (blockedCount > 0) {
-      rootCauses.push(`${blockedCount} issues currently blocked in code review or external dependencies.`);
+      rootCauses.push(`${blockedCount} incidencia(s) bloqueada(s) por revisión de código o dependencias externas.`);
     }
     if (isLagging) {
       rootCauses.push(
-        `Actual remaining (${actualLatest} pts) exceeds ideal target (${idealLatest} pts). Unplanned scope addition or velocity deficit detected.`
+        `${dayLabel} quedan ${actualLatest} pts reales frente a ${idealLatest} pts ideales: hay alcance no planificado o un déficit de velocidad.`
       );
     }
     if (rootCauses.length === 0) {
-      rootCauses.push('Sprint is tracking cleanly along the ideal burndown trajectory.');
+      rootCauses.push('El sprint avanza según la trayectoria ideal del burndown.');
     }
     rootCauses.push(...timeAlerts);
 
     const actionableRecommendations: string[] = [
-      'Conduct swarming session on blocked PRs and impediments.',
-      'Defer lower-priority backlog stories to preserve sprint goal commitment.',
+      'Organizar una sesión de swarming sobre los PR bloqueados y los impedimentos.',
+      'Postergar las historias de menor prioridad para proteger el objetivo del sprint.',
     ];
 
     const diagnosis =
       healthStatus === 'AT_RISK'
-        ? `Actual burndown is trending above ideal rate. Sprint delivery is at risk of velocity deficit. ${timeAlerts.join(' ')}`.trim()
-        : `Sprint burndown is tracking along ideal trajectory. ${timeAlerts.join(' ')}`.trim();
+        ? `${dayLabel}, el burndown real va por sobre el ideal: la entrega del sprint está en riesgo por déficit de velocidad. ${timeAlerts.join(' ')}`.trim()
+        : `${dayLabel}, el burndown del sprint avanza según la trayectoria ideal. ${timeAlerts.join(' ')}`.trim();
 
     return {
       healthStatus,
