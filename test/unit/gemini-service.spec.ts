@@ -7,7 +7,7 @@ describe('GeminiService', () => {
       const service = new GeminiService({ forceOffline: true });
       expect(service.isLiveMode()).toBe(false);
       expect(service.getMode()).toBe('mock');
-      expect(service.getModelName()).toBe('gemini-2.0-flash');
+      expect(service.getModelName()).toBe('gemini-3.5-flash-lite');
     });
 
     it('decomposes epic via offline fallback engine', async () => {
@@ -92,9 +92,9 @@ describe('GeminiService', () => {
 
       // Mock internal genAI client with an artificial hang
       (service as any).genAI = {
-        getGenerativeModel: () => ({
+        models: {
           generateContent: () => new Promise((resolve) => setTimeout(resolve, 500)),
-        }),
+        },
       };
 
       const res = await service.decomposeEpic(TEST_FIXTURES.authEpic);
@@ -106,9 +106,9 @@ describe('GeminiService', () => {
       const service = new GeminiService({ apiKey: 'test-fake-key' });
 
       (service as any).genAI = {
-        getGenerativeModel: () => ({
+        models: {
           generateContent: jest.fn().mockRejectedValue(new Error('429 Too Many Requests: ResourceExhausted')),
-        }),
+        },
       };
 
       const res = await service.planSprint({
@@ -125,9 +125,9 @@ describe('GeminiService', () => {
       const service = new GeminiService({ apiKey: 'test-fake-key' });
 
       (service as any).genAI = {
-        getGenerativeModel: () => ({
+        models: {
           generateContent: jest.fn().mockRejectedValue(new Error('503 Service Unavailable')),
-        }),
+        },
       };
 
       const res = await service.diagnoseMetrics({
@@ -160,17 +160,13 @@ describe('GeminiService', () => {
       const wrappedJson = '```json\n' + JSON.stringify(mockStories) + '\n```';
 
       (service as any).genAI = {
-        getGenerativeModel: () => ({
-          generateContent: jest.fn().mockResolvedValue({
-            response: {
-              text: () => wrappedJson,
-            },
-          }),
-        }),
+        models: {
+          generateContent: jest.fn().mockResolvedValue({ text: wrappedJson }),
+        },
       };
 
       const res = await service.decomposeEpic({ epicTitle: 'Fence Test Epic' });
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.epicTitle).toBe('Fence Test Epic');
       expect(res.data.stories[0].title).toBe('Story 1');
     });
@@ -187,13 +183,9 @@ describe('GeminiService', () => {
       };
 
       (service as any).genAI = {
-        getGenerativeModel: () => ({
-          generateContent: jest.fn().mockResolvedValue({
-            response: {
-              text: () => JSON.stringify(mockPlan),
-            },
-          }),
-        }),
+        models: {
+          generateContent: jest.fn().mockResolvedValue({ text: JSON.stringify(mockPlan) }),
+        },
       };
 
       const res = await service.planSprint({
@@ -202,7 +194,7 @@ describe('GeminiService', () => {
         candidateIssues: TEST_FIXTURES.candidateIssues,
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.allocatedStoryPoints).toBe(13);
       expect(res.data.rationale).toContain('Gemini 2.0 Flash');
     });
@@ -218,13 +210,9 @@ describe('GeminiService', () => {
       };
 
       (service as any).genAI = {
-        getGenerativeModel: () => ({
-          generateContent: jest.fn().mockResolvedValue({
-            response: {
-              text: () => JSON.stringify(mockDiagnosis),
-            },
-          }),
-        }),
+        models: {
+          generateContent: jest.fn().mockResolvedValue({ text: JSON.stringify(mockDiagnosis) }),
+        },
       };
 
       const res = await service.diagnoseMetrics({
@@ -232,7 +220,7 @@ describe('GeminiService', () => {
         burndownData: TEST_FIXTURES.healthyBurndown,
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.healthStatus).toBe('HEALTHY');
     });
 
@@ -247,20 +235,16 @@ describe('GeminiService', () => {
       };
 
       (service as any).genAI = {
-        getGenerativeModel: () => ({
-          generateContent: jest.fn().mockResolvedValue({
-            response: {
-              text: () => JSON.stringify(mockEstimate),
-            },
-          }),
-        }),
+        models: {
+          generateContent: jest.fn().mockResolvedValue({ text: JSON.stringify(mockEstimate) }),
+        },
       };
 
       const res = await service.estimateStoryPoints({
         title: 'Kafka Consumer',
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.storyPoints).toBe(5);
     });
 
@@ -273,20 +257,16 @@ describe('GeminiService', () => {
       };
 
       (service as any).genAI = {
-        getGenerativeModel: () => ({
-          generateContent: jest.fn().mockResolvedValue({
-            response: {
-              text: () => JSON.stringify(mockCriteria),
-            },
-          }),
-        }),
+        models: {
+          generateContent: jest.fn().mockResolvedValue({ text: JSON.stringify(mockCriteria) }),
+        },
       };
 
       const res = await service.generateAcceptanceCriteria({
         title: 'Live Criteria',
       });
 
-      expect(res.source).toBe('gemini-2.0-flash');
+      expect(res.source).toBe('gemini-3.5-flash-lite');
       expect(res.data.acceptanceCriteriaGherkin).toContain('Feature: Live Criteria');
     });
   });

@@ -34,7 +34,8 @@ WORKDIR /app
 # Production Environment Defaults
 ENV NODE_ENV=production \
     PORT=3000 \
-    GEMINI_MODEL=gemini-2.0-flash \
+    GEMINI_MODEL=gemini-3.5-flash-lite \
+    GEMINI_TIMEOUT_MS=10000 \
     OFFLINE_FALLBACK_ENABLED=true
 
 # Install essential system packages

@@ -33,37 +33,33 @@ describe('POST /agent/decompose-epic', () => {
     }
   });
 
-  it('sets x-ai-engine to gemini-2.0-flash when live model responds', async () => {
+  it('sets x-ai-engine to the live model name when Gemini responds', async () => {
     const aiService = new GeminiService({ apiKey: 'fake-api-key' });
 
+    const liveResponse = {
+      epicTitle: 'Live Epic',
+      stories: [
+        {
+          title: 'Live Story',
+          description: 'Desc',
+          type: 'STORY',
+          priority: 'HIGH',
+          estimatedStoryPoints: 5,
+          acceptanceCriteriaGherkin: 'Scenario: Live\nGiven X\nWhen Y\nThen Z',
+        },
+      ],
+    };
     (aiService as any).genAI = {
-      getGenerativeModel: () => ({
-        generateContent: jest.fn().mockResolvedValue({
-          response: {
-            text: () =>
-              JSON.stringify({
-                epicTitle: 'Live Epic',
-                stories: [
-                  {
-                    title: 'Live Story',
-                    description: 'Desc',
-                    type: 'STORY',
-                    priority: 'HIGH',
-                    estimatedStoryPoints: 5,
-                    acceptanceCriteriaGherkin: 'Scenario: Live\nGiven X\nWhen Y\nThen Z',
-                  },
-                ],
-              }),
-          },
-        }),
-      }),
+      models: {
+        generateContent: jest.fn().mockResolvedValue({ text: JSON.stringify(liveResponse) }),
+      },
     };
 
     const { app } = createServer(aiService);
     const res = await request(app).post('/agent/decompose-epic').send({ epicTitle: 'Live Epic' });
 
     expect(res.status).toBe(200);
-    expect(res.headers['x-ai-engine']).toBe('gemini-2.0-flash');
+    expect(res.headers['x-ai-engine']).toBe('gemini-3.5-flash-lite');
     expect(res.body.stories[0].title).toBe('Live Story');
   });
 

@@ -1,19 +1,21 @@
 /**
- * Mock helper for GoogleGenerativeAI SDK
+ * Mock helpers for the @google/genai client (`ai.models.generateContent` returning `{ text }`).
  */
 
-export function createMockGenerativeModel(mockResponse: any) {
+export function createMockGenAIClient(mockResponse: any) {
   return {
-    generateContent: jest.fn().mockResolvedValue({
-      response: {
-        text: () => (typeof mockResponse === 'string' ? mockResponse : JSON.stringify(mockResponse)),
-      },
-    }),
+    models: {
+      generateContent: jest.fn().mockResolvedValue({
+        text: typeof mockResponse === 'string' ? mockResponse : JSON.stringify(mockResponse),
+      }),
+    },
   };
 }
 
-export function createFailingGenerativeModel(error: Error) {
+export function createFailingGenAIClient(error: Error) {
   return {
-    generateContent: jest.fn().mockRejectedValue(error),
+    models: {
+      generateContent: jest.fn().mockRejectedValue(error),
+    },
   };
 }

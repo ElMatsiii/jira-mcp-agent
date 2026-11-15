@@ -4,9 +4,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6.svg?logo=typescript)]()
 [![Coverage](https://img.shields.io/badge/Coverage-83.5%25-brightgreen.svg)]()
 [![MCP SDK](https://img.shields.io/badge/Model_Context_Protocol-v1.0-orange.svg)]()
-[![Gemini 2.0](https://img.shields.io/badge/Google_Gemini-2.0_Flash-4285F4?logo=google)]()
+[![Gemini 3.5 Flash-Lite](https://img.shields.io/badge/Google_Gemini-3.5_Flash_Lite-4285F4?logo=google)]()
 
-Agente inteligente de gestión ágil (AI Scrum Master) implementado en **TypeScript / Node.js** (cumpliendo con la restricción técnica de **no usar Python**). Implementa el protocolo estándar **Model Context Protocol (MCP)** mediante el SDK oficial `@modelcontextprotocol/sdk` y se integra con la API de **Google Gemini 2.0 Flash** (`@google/genai`), ofreciendo además un motor de fallback heurístico offline para garantizar alta disponibilidad.
+Agente inteligente de gestión ágil (AI Scrum Master) implementado en **TypeScript / Node.js** (cumpliendo con la restricción técnica de **no usar Python**). Implementa el protocolo estándar **Model Context Protocol (MCP)** mediante el SDK oficial `@modelcontextprotocol/sdk` y se integra con la API de **Google Gemini** (por defecto `gemini-3.5-flash-lite`) (`@google/genai`), ofreciendo además un motor de fallback heurístico offline para garantizar alta disponibilidad.
 
 ---
 
@@ -16,7 +16,7 @@ Agente inteligente de gestión ágil (AI Scrum Master) implementado en **TypeScr
 flowchart LR
     BFF["BFF Gateway\n(GraphQL / NestJS)"] -->|"HTTP / REST :3000\n(POST /decompose-epic)"| MCP["jira-mcp-agent\n(:3000 Server)"]
     
-    MCP -->|"SDK Oficial @google/genai\n(HTTPS)"| GEMINI["Google Gemini 2.0 Flash\n(Cloud LLM)"]
+    MCP -->|"SDK Oficial @google/genai\n(HTTPS)"| GEMINI["Google Gemini 3.5 Flash-Lite\n(Cloud LLM)"]
     MCP -.->|"Fallback en caso de offline / sin API Key"| FB["Fallback Heuristic Engine\n(Fibonacci + Gherkin)"]
 ```
 
@@ -29,7 +29,7 @@ flowchart LR
     * `POST /diagnose-metrics`: Diagnóstico predictivo de riesgos de sprint y detección de cuellos de botella.
     * `GET /sse`: Transporte Server-Sent Events (SSE) nativo de MCP.
 * **Egress (Salida):**
-  * **Google Gemini API**: Comunicación HTTPS hacia `gemini-2.0-flash` para generación de esquemas JSON estructurados garantizados por Zod.
+  * **Google Gemini API**: Comunicación HTTPS hacia el modelo de `GEMINI_MODEL` (por defecto `gemini-3.5-flash-lite`) para generación de esquemas JSON estructurados garantizados por Zod.
 
 ---
 
@@ -69,7 +69,9 @@ jira-mcp-agent/
 | :--- | :--- | :--- |
 | `PORT` | Puerto de escucha HTTP / MCP | `3000` |
 | `GEMINI_API_KEY` | Clave de API de Google Gemini (opcional en desarrollo gracias al fallback) | `""` *(si no se provee, opera en modo fallback)* |
-| `GEMINI_MODEL` | Identificador del modelo Gemini | `gemini-2.0-flash` |
+| `GEMINI_MODEL` | Identificador del modelo Gemini (`gemini-2.0-flash` y `gemini-2.5-flash` ya no están disponibles) | `gemini-3.5-flash-lite` |
+| `GEMINI_TIMEOUT_MS` | Tiempo máximo por llamada a Gemini antes de usar el respaldo (debe ser menor a los 15 s del BFF) | `10000` |
+| `FORCE_OFFLINE` / `MOCK_MODE` | Fuerza el motor de respaldo offline | `false` |
 | `LOG_LEVEL` | Nivel de logging | `info` |
 
 ---

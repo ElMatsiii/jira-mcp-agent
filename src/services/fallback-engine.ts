@@ -28,6 +28,7 @@ import {
   BreakdownTaskRequest,
   BreakdownTaskResponse,
 } from '../types';
+import { selectElapsedBurndown } from './burndown-window';
 
 export class OfflineFallbackEngine {
   /**
@@ -162,7 +163,7 @@ export class OfflineFallbackEngine {
    * Satisfies Feature 26 & 27 contracts.
    */
   public static decomposeEpic(request: DecomposeEpicRequest): DecomposeEpicResponse {
-    const { epicTitle, epicDescription = '', projectKey = 'JIRA' } = request;
+    const { epicTitle, epicDescription = '' } = request;
     const combined = `${epicTitle} ${epicDescription}`.toLowerCase();
     const stories: DecomposedStory[] = [];
 
@@ -176,7 +177,7 @@ export class OfflineFallbackEngine {
     ) {
       stories.push(
         {
-          title: `[${projectKey}] User Authentication & JWT Verification Flow`,
+          title: `User Authentication & JWT Verification Flow`,
           description: `As a user, I want secure authentication via OAuth2/JWT so that access to the system is protected.`,
           type: 'STORY',
           priority: 'CRITICAL',
@@ -188,7 +189,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Multi-Tenant Isolation & Organization Scoping`,
+          title: `Multi-Tenant Isolation & Organization Scoping`,
           description: `As an organization administrator, I want tenant-scoped data isolation so that users only see data within their domain.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -200,7 +201,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Role-Based Access Control Guards & Middleware`,
+          title: `Role-Based Access Control Guards & Middleware`,
           description: `As a system engineer, I want API authorization guards so that endpoints enforce permissions according to user roles.`,
           type: 'TASK',
           priority: 'HIGH',
@@ -212,7 +213,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Security Audit Logging & Session Invalidation`,
+          title: `Security Audit Logging & Session Invalidation`,
           description: `As a compliance officer, I want security events logged and expired tokens revoked so that session breaches are prevented.`,
           type: 'STORY',
           priority: 'MEDIUM',
@@ -235,7 +236,7 @@ export class OfflineFallbackEngine {
     ) {
       stories.push(
         {
-          title: `[${projectKey}] Domain Entity Schema & Persistence Repository`,
+          title: `Domain Entity Schema & Persistence Repository`,
           description: `As a backend engineer, I want database entities and migration scripts so that state is persisted reliably.`,
           type: 'TASK',
           priority: 'CRITICAL',
@@ -247,7 +248,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] gRPC and REST Endpoint Handlers`,
+          title: `gRPC and REST Endpoint Handlers`,
           description: `As an API consumer, I want RPC and REST endpoints for creating and querying items with input validation.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -259,7 +260,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Interactive Kanban State Transitions & Event Streaming`,
+          title: `Interactive Kanban State Transitions & Event Streaming`,
           description: `As a team member, I want state transitions between TODO, IN_PROGRESS, and DONE to emit domain events.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -271,7 +272,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Automated Unit and Contract Integration Tests`,
+          title: `Automated Unit and Contract Integration Tests`,
           description: `As a QA engineer, I want automated test suites verifying status transitions and boundary conditions.`,
           type: 'TASK',
           priority: 'MEDIUM',
@@ -294,7 +295,7 @@ export class OfflineFallbackEngine {
     ) {
       stories.push(
         {
-          title: `[${projectKey}] Partitioned Event Consumer & Ingestion Pipeline`,
+          title: `Partitioned Event Consumer & Ingestion Pipeline`,
           description: `As a platform engineer, I want high-throughput stream processing so that incoming messages are ingested without backpressure.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -306,7 +307,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Real-time Aggregation Engine & Metrics Snapshot`,
+          title: `Real-time Aggregation Engine & Metrics Snapshot`,
           description: `As an analyst, I want aggregated velocity and burndown snapshots so that metrics reflect live progress.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -318,7 +319,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Dead-Letter Queue & Resilient Error Interceptor`,
+          title: `Dead-Letter Queue & Resilient Error Interceptor`,
           description: `As a reliability engineer, I want poisoned messages rerouted to a dead-letter queue without stalling the consumer group.`,
           type: 'TASK',
           priority: 'MEDIUM',
@@ -335,7 +336,7 @@ export class OfflineFallbackEngine {
     else {
       stories.push(
         {
-          title: `[${projectKey}] Implement ${epicTitle} - Core Data Contracts`,
+          title: `Implement ${epicTitle} - Core Data Contracts`,
           description: `As a software engineer, I want schema definitions and data contracts so that domain entities are structured.`,
           type: 'TASK',
           priority: 'HIGH',
@@ -347,7 +348,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Implement ${epicTitle} - Inter-Service Logic`,
+          title: `Implement ${epicTitle} - Inter-Service Logic`,
           description: `As an API consumer, I want service endpoints and inter-service dispatch so that business operations execute cleanly.`,
           type: 'STORY',
           priority: 'HIGH',
@@ -359,7 +360,7 @@ export class OfflineFallbackEngine {
           ),
         },
         {
-          title: `[${projectKey}] Implement ${epicTitle} - Event Streaming & Analytics`,
+          title: `Implement ${epicTitle} - Event Streaming & Analytics`,
           description: `As a downstream consumer, I want state change events published to Kafka so that analytics reflect current progress.`,
           type: 'STORY',
           priority: 'MEDIUM',
@@ -395,7 +396,7 @@ export class OfflineFallbackEngine {
         allocatedStoryPoints: 0,
         capacityUtilizationPercent: 0,
         recommendedIssueIds: [],
-        riskAssessment: 'OPTIMAL',
+        riskAssessment: 'LOW',
         rationale: 'Capacity is 0 or candidate issues list is empty. No issues allocated.',
       };
     }
@@ -407,7 +408,7 @@ export class OfflineFallbackEngine {
         allocatedStoryPoints: 0,
         capacityUtilizationPercent: 0,
         recommendedIssueIds: [],
-        riskAssessment: 'HIGH_CAPACITY_RISK',
+        riskAssessment: 'HIGH',
         rationale: `All candidate issues exceed total team capacity (${capacity} pts). Backlog deferral recommended.`,
       };
     }
@@ -425,7 +426,7 @@ export class OfflineFallbackEngine {
     }
 
     const utilization = Math.round((allocated / capacity) * 100);
-    const riskAssessment = allocated > capacity * 0.9 ? 'MEDIUM_CAPACITY_RISK' : 'OPTIMAL';
+    const riskAssessment = allocated > capacity * 0.9 ? 'MEDIUM' : 'LOW';
     const rationale = `Selected ${recommended.length} candidate issues matching team velocity capacity of ${capacity} points (${utilization}% utilization).`;
 
     return {
@@ -445,23 +446,29 @@ export class OfflineFallbackEngine {
   public static diagnoseMetrics(request: DiagnoseMetricsRequest): DiagnoseMetricsResponse {
     const sprintId = request.sprintId;
     const sprintName = request.sprintName || `Sprint ${sprintId}`;
-    const burndown = request.burndownData || [];
+    // Future days are never diagnosed: only the points up to asOfDate (default: today UTC) count.
+    const window = selectElapsedBurndown(request.burndownData || [], request.asOfDate);
+    const burndown = window.elapsed;
     const blockedCount = request.blockedIssuesCount || 0;
     const timeAlerts = request.alerts || [];
+    const dayLabel = window.currentDayNumber > 0
+      ? `Al ${window.asOfDate} (día ${window.currentDayNumber} de ${window.totalDays})`
+      : `Al ${window.asOfDate}`;
 
     if (burndown.length === 0) {
       return {
         healthStatus: blockedCount > 0 ? 'AT_RISK' : 'HEALTHY',
-        diagnosis: `Sprint ${sprintName} has no burndown data points recorded yet. ${timeAlerts.join(' ')}`.trim(),
+        diagnosis: `${dayLabel}, el sprint ${sprintName} aún no tiene días de burndown registrados. ${timeAlerts.join(' ')}`.trim(),
         rootCauses: [
-          ...(blockedCount > 0 ? [`${blockedCount} issues currently flagged as BLOCKED.`] : ['Sprint initialized; awaiting initial task progress.']),
+          ...(blockedCount > 0
+            ? [`${blockedCount} incidencia(s) marcada(s) como BLOQUEADA(S).`]
+            : ['Sprint recién iniciado o por iniciar; todavía no hay avance registrado.']),
           ...timeAlerts,
         ],
-        actionableRecommendations: ['Ensure team transitions tasks and logs daily progress.'],
+        actionableRecommendations: ['Asegurar que el equipo mueva sus tareas en el tablero y registre su avance diario.'],
       };
     }
 
-    const first = burndown[0];
     const latest = burndown[burndown.length - 1];
 
     const actualLatest = latest.actualRemaining ?? latest.remainingStoryPoints ?? 0;
@@ -472,27 +479,27 @@ export class OfflineFallbackEngine {
     const rootCauses: string[] = [];
 
     if (blockedCount > 0) {
-      rootCauses.push(`${blockedCount} issues currently blocked in code review or external dependencies.`);
+      rootCauses.push(`${blockedCount} incidencia(s) bloqueada(s) por revisión de código o dependencias externas.`);
     }
     if (isLagging) {
       rootCauses.push(
-        `Actual remaining (${actualLatest} pts) exceeds ideal target (${idealLatest} pts). Unplanned scope addition or velocity deficit detected.`
+        `${dayLabel} quedan ${actualLatest} pts reales frente a ${idealLatest} pts ideales: hay alcance no planificado o un déficit de velocidad.`
       );
     }
     if (rootCauses.length === 0) {
-      rootCauses.push('Sprint is tracking cleanly along the ideal burndown trajectory.');
+      rootCauses.push('El sprint avanza según la trayectoria ideal del burndown.');
     }
     rootCauses.push(...timeAlerts);
 
     const actionableRecommendations: string[] = [
-      'Conduct swarming session on blocked PRs and impediments.',
-      'Defer lower-priority backlog stories to preserve sprint goal commitment.',
+      'Organizar una sesión de swarming sobre los PR bloqueados y los impedimentos.',
+      'Postergar las historias de menor prioridad para proteger el objetivo del sprint.',
     ];
 
     const diagnosis =
       healthStatus === 'AT_RISK'
-        ? `Actual burndown is trending above ideal rate. Sprint delivery is at risk of velocity deficit. ${timeAlerts.join(' ')}`.trim()
-        : `Sprint burndown is tracking along ideal trajectory. ${timeAlerts.join(' ')}`.trim();
+        ? `${dayLabel}, el burndown real va por sobre el ideal: la entrega del sprint está en riesgo por déficit de velocidad. ${timeAlerts.join(' ')}`.trim()
+        : `${dayLabel}, el burndown del sprint avanza según la trayectoria ideal. ${timeAlerts.join(' ')}`.trim();
 
     return {
       healthStatus,

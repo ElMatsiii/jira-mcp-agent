@@ -25,7 +25,7 @@ describe('POST /agent/plan-sprint', () => {
     expect(res.body.allocatedStoryPoints).toBe(13);
     expect(res.body.recommendedIssueIds).toEqual(['iss-1', 'iss-2']);
     expect(res.body.capacityUtilizationPercent).toBeGreaterThan(80);
-    expect(res.body.riskAssessment).toBe('OPTIMAL');
+    expect(res.body.riskAssessment).toBe('LOW');
     expect(res.body.rationale).toBeDefined();
   });
 
